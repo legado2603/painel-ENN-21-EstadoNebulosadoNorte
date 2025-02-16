@@ -1,0 +1,406 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Painel de Controle</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 0;
+      background-color: #121212;
+      color: #fff;
+    }
+
+    .container {
+      max-width: 900px;
+      margin: 20px auto;
+      padding: 20px;
+      background-color: #1e1e1e;
+      border-radius: 10px;
+      box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+    }
+
+    h1 {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+
+    .button-row {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 15px;
+      gap: 10px;
+    }
+
+    label {
+      flex: 1 0 100%;
+      margin-bottom: 5px;
+      color: #bbb;
+    }
+
+    input[type="text"], input[type="color"] {
+      padding: 10px;
+      width: calc(33.3% - 10px);
+      border-radius: 5px;
+      border: none;
+    }
+
+    input[type="checkbox"] {
+      transform: scale(1.2);
+      margin-left: 10px;
+    }
+
+    button {
+      padding: 10px 20px;
+      background-color: #1e90ff;
+      border: none;
+      border-radius: 5px;
+      color: #fff;
+      cursor: pointer;
+      transition: background-color 0.3s ease;
+    }
+
+    button:hover {
+      background-color: #005cbf;
+    }
+
+    .save-btn {
+      width: 100%;
+      margin-top: 20px;
+      background-color: #28a745;
+    }
+
+    .save-btn:hover {
+      background-color: #1e7e34;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Painel de Controle</h1>
+    <form id="controlPanel">
+      <!-- Campos serão gerados dinamicamente -->
+      <div class="button-row">
+  <label for="title-1">Título</label>
+  <input type="text" id="title-1" value="Botão 1" placeholder="Título" data-key="button1" data-field="title">
+
+  <label for="url-1">URL</label>
+  <input type="text" id="url-1" value="https://example.com" placeholder="URL de Redirecionamento" data-key="button1" data-field="url">
+
+  <label for="color-1">Cor</label>
+  <input type="color" id="color-1" value="#ff0000" data-key="button1" data-field="color">
+
+  <label for="visible-1">
+    Visível
+    <input type="checkbox" id="visible-1" checked data-key="button1" data-field="visible">
+  </label>
+</div>
+
+<div class="button-row">
+  <label for="title-2">Título</label>
+  <input type="text" id="title-2" value="Botão 2" placeholder="Título" data-key="button2" data-field="title">
+
+  <label for="url-2">URL</label>
+  <input type="text" id="url-2" value="https://example.org" placeholder="URL de Redirecionamento" data-key="button2" data-field="url">
+
+  <label for="color-2">Cor</label>
+  <input type="color" id="color-2" value="#00ff00" data-key="button2" data-field="color">
+
+  <label for="visible-2">
+    Visível
+    <input type="checkbox" id="visible-2" data-key="button2" data-field="visible">
+  </label>
+</div>
+<div class="button-row">
+  <label for="title-3">Título</label>
+  <input type="text" id="title-3" value="Botão 3" placeholder="Título" data-key="button3" data-field="title">
+
+  <label for="url-3">URL</label>
+  <input type="text" id="url-3" value="https://example.net" placeholder="URL de Redirecionamento" data-key="button3" data-field="url">
+
+  <label for="color-3">Cor</label>
+  <input type="color" id="color-3" value="#0000ff" data-key="button3" data-field="color">
+
+  <label for="visible-3">
+    Visível
+    <input type="checkbox" id="visible-3" checked data-key="button3" data-field="visible">
+  </label>
+</div>
+
+<div class="button-row">
+  <label for="title-4">Título</label>
+  <input type="text" id="title-4" value="Botão 4" placeholder="Título" data-key="button4" data-field="title">
+
+  <label for="url-4">URL</label>
+  <input type="text" id="url-4" value="https://example.dev" placeholder="URL de Redirecionamento" data-key="button4" data-field="url">
+
+  <label for="color-4">Cor</label>
+  <input type="color" id="color-4" value="#ffff00" data-key="button4" data-field="color">
+
+  <label for="visible-4">
+    Visível
+    <input type="checkbox" id="visible-4" checked data-key="button4" data-field="visible">
+  </label>
+</div>
+<div class="button-row">
+  <label for="title-5">Título</label>
+  <input type="text" id="title-5" value="Botão 5" placeholder="Título" data-key="button5" data-field="title">
+
+  <label for="url-5">URL</label>
+  <input type="text" id="url-5" value="https://example.io" placeholder="URL de Redirecionamento" data-key="button5" data-field="url">
+
+  <label for="color-5">Cor</label>
+  <input type="color" id="color-5" value="#ff00ff" data-key="button5" data-field="color">
+
+  <label for="visible-5">
+    Visível
+    <input type="checkbox" id="visible-5" checked data-key="button5" data-field="visible">
+  </label>
+</div>
+
+<div class="button-row">
+  <label for="title-6">Título</label>
+  <input type="text" id="title-6" value="Botão 6" placeholder="Título" data-key="button6" data-field="title">
+
+  <label for="url-6">URL</label>
+  <input type="text" id="url-6" value="https://example.tech" placeholder="URL de Redirecionamento" data-key="button6" data-field="url">
+
+  <label for="color-6">Cor</label>
+  <input type="color" id="color-6" value="#00ffff" data-key="button6" data-field="color">
+
+  <label for="visible-6">
+    Visível
+    <input type="checkbox" id="visible-6" checked data-key="button6" data-field="visible">
+  </label>
+</div>
+<div class="button-row">
+  <label for="title-7">Título</label>
+  <input type="text" id="title-7" value="Botão 7" placeholder="Título" data-key="button7" data-field="title">
+
+  <label for="url-7">URL</label>
+  <input type="text" id="url-7" value="https://example7.com" placeholder="URL de Redirecionamento" data-key="button7" data-field="url">
+
+  <label for="color-7">Cor</label>
+  <input type="color" id="color-7" value="#ff8000" data-key="button7" data-field="color">
+
+  <label for="visible-7">
+    Visível
+    <input type="checkbox" id="visible-7" checked data-key="button7" data-field="visible">
+  </label>
+</div>
+
+<div class="button-row">
+  <label for="title-8">Título</label>
+  <input type="text" id="title-8" value="Botão 8" placeholder="Título" data-key="button8" data-field="title">
+
+  <label for="url-8">URL</label>
+  <input type="text" id="url-8" value="https://example8.io" placeholder="URL de Redirecionamento" data-key="button8" data-field="url">
+
+  <label for="color-8">Cor</label>
+  <input type="color" id="color-8" value="#00ff00" data-key="button8" data-field="color">
+
+  <label for="visible-8">
+    Visível
+    <input type="checkbox" id="visible-8" checked data-key="button8" data-field="visible">
+  </label>
+</div>
+<div class="button-row">
+  <label for="title-9">Título</label>
+  <input type="text" id="title-9" value="Botão 9" placeholder="Título" data-key="button9" data-field="title">
+
+  <label for="url-9">URL</label>
+  <input type="text" id="url-9" value="https://example9.com" placeholder="URL de Redirecionamento" data-key="button9" data-field="url">
+
+  <label for="color-9">Cor</label>
+  <input type="color" id="color-9" value="#8000ff" data-key="button9" data-field="color">
+
+  <label for="visible-9">
+    Visível
+    <input type="checkbox" id="visible-9" checked data-key="button9" data-field="visible">
+  </label>
+</div>
+
+<div class="button-row">
+  <label for="title-10">Título</label>
+  <input type="text" id="title-10" value="Botão 10" placeholder="Título" data-key="button10" data-field="title">
+
+  <label for="url-10">URL</label>
+  <input type="text" id="url-10" value="https://example10.tech" placeholder="URL de Redirecionamento" data-key="button10" data-field="url">
+
+  <label for="color-10">Cor</label>
+  <input type="color" id="color-10" value="#ff4081" data-key="button10" data-field="color">
+
+  <label for="visible-10">
+    Visível
+    <input type="checkbox" id="visible-10" checked data-key="button10" data-field="visible">
+  </label>
+</div>
+<div class="button-row">
+  <label for="title-11">Título</label>
+  <input type="text" id="title-11" value="Botão 11" placeholder="Título" data-key="button11" data-field="title">
+
+  <label for="url-11">URL</label>
+  <input type="text" id="url-11" value="https://example11.com" placeholder="URL de Redirecionamento" data-key="button11" data-field="url">
+
+  <label for="color-11">Cor</label>
+  <input type="color" id="color-11" value="#00bcd4" data-key="button11" data-field="color">
+
+  <label for="visible-11">
+    Visível
+    <input type="checkbox" id="visible-11" checked data-key="button11" data-field="visible">
+  </label>
+</div>
+
+<div class="button-row">
+  <label for="title-12">Título</label>
+  <input type="text" id="title-12" value="Botão 12" placeholder="Título" data-key="button12" data-field="title">
+
+  <label for="url-12">URL</label>
+  <input type="text" id="url-12" value="https://example12.co" placeholder="URL de Redirecionamento" data-key="button12" data-field="url">
+
+  <label for="color-12">Cor</label>
+  <input type="color" id="color-12" value="#ff5722" data-key="button12" data-field="color">
+
+  <label for="visible-12">
+    Visível
+    <input type="checkbox" id="visible-12" checked data-key="button12" data-field="visible">
+  </label>
+</div>
+    </form>
+    <button class="save-btn" id="saveChanges">Salvar Alterações</button>
+  </div>
+
+  <script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/9.17.1/firebase-app.js";
+  import { getDatabase, ref, onValue, set } from "https://www.gstatic.com/firebasejs/9.17.1/firebase-database.js";
+  import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.17.1/firebase-auth.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyBp0QRdqod_68ARBfJlDfZQBX4sg1Du_o4",
+    authDomain: "socialnetwork021-fad5a.firebaseapp.com",
+    databaseURL: "https://socialnetwork021-fad5a-default-rtdb.firebaseio.com",
+    projectId: "socialnetwork021-fad5a",
+    storageBucket: "socialnetwork021-fad5a.appspot.com",
+    messagingSenderId: "1040846806964",
+    appId: "1:1040846806964:web:b7b873170deeb8ed785ce1",
+    measurementId: "G-0NC44RCWV6"
+  };
+
+  // Inicializar Firebase
+  const app = initializeApp(firebaseConfig);
+  const database = getDatabase(app);
+  const auth = getAuth(app);
+
+  const buttonsRef = ref(database, "buttons");
+  const form = document.getElementById("controlPanel");
+  const saveButton = document.getElementById("saveChanges");
+
+  // Função para renderizar os botões
+  const renderButtons = (buttons) => {
+    form.innerHTML = "";
+
+    Object.keys(buttons).forEach((buttonKey) => {
+      const buttonData = buttons[buttonKey];
+
+      const row = document.createElement("div");
+      row.className = "button-row";
+
+      // Título
+      const titleInput = document.createElement("input");
+      titleInput.type = "text";
+      titleInput.value = buttonData.title || "";
+      titleInput.placeholder = "Título";
+      titleInput.dataset.key = buttonKey;
+      titleInput.dataset.field = "title";
+
+      // URL
+      const urlInput = document.createElement("input");
+      urlInput.type = "text";
+      urlInput.value = buttonData.url || "";
+      urlInput.placeholder = "URL de Redirecionamento";
+      urlInput.dataset.key = buttonKey;
+      urlInput.dataset.field = "url";
+
+      // Cor
+      const colorInput = document.createElement("input");
+      colorInput.type = "color";
+      colorInput.value = buttonData.color || "#ffffff";
+      colorInput.dataset.key = buttonKey;
+      colorInput.dataset.field = "color";
+
+      // Background
+      const bgInput = document.createElement("input");
+      bgInput.type = "color";
+      bgInput.value = buttonData.background || "#000000";
+      bgInput.dataset.key = buttonKey;
+      bgInput.dataset.field = "background";
+
+      // Link da imagem
+      const imageLinkInput = document.createElement("input");
+      imageLinkInput.type = "text";
+      imageLinkInput.value = buttonData.imageLink || "";
+      imageLinkInput.placeholder = "URL da Imagem";
+      imageLinkInput.dataset.key = buttonKey;
+      imageLinkInput.dataset.field = "imageLink";
+
+      // Visibilidade
+      const checkbox = document.createElement("input");
+      checkbox.type = "checkbox";
+      checkbox.checked = buttonData.visible || false;
+      checkbox.dataset.key = buttonKey;
+      checkbox.dataset.field = "visible";
+
+      // Adiciona elementos ao row
+      row.appendChild(titleInput);
+      row.appendChild(urlInput);
+      row.appendChild(colorInput);
+      row.appendChild(bgInput);
+      row.appendChild(imageLinkInput);
+      row.appendChild(checkbox);
+      form.appendChild(row);
+    });
+  };
+
+  // Verificar autenticação
+  onAuthStateChanged(auth, (user) => {
+    if (user) {
+      // Carregar dados do Firebase
+      onValue(buttonsRef, (snapshot) => {
+        const buttonsData = snapshot.val();
+        if (buttonsData) renderButtons(buttonsData);
+      });
+
+      // Salvar alterações
+      saveButton.addEventListener("click", () => {
+        const updatedButtons = {};
+        const inputs = form.querySelectorAll("input[type='text'], input[type='color'], input[type='checkbox']");
+
+        inputs.forEach((input) => {
+          const key = input.dataset.key;
+          const field = input.dataset.field;
+
+          if (!updatedButtons[key]) updatedButtons[key] = {};
+          if (field === "visible") {
+            updatedButtons[key][field] = input.checked;
+          } else {
+            updatedButtons[key][field] = input.value;
+          }
+        });
+
+        set(buttonsRef, updatedButtons)
+          .then(() => alert("Alterações salvas com sucesso!"))
+          .catch((error) => alert("Erro ao salvar alterações: " + error.message));
+      });
+
+    } else {
+      alert("Usuário não autenticado. Redirecionando para a página de login...");
+      window.location.href = "login.html"; // Redirecionar para a página de login
+    }
+  });
+</script>
+</body>
+</html>

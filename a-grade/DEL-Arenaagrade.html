@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Painel de Mensagens</title>
+  <style>
+    /* Estilos */
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 0;
+      background-color: #f4f4f4;
+    }
+    .container {
+      max-width: 800px;
+      margin: 20px auto;
+      padding: 20px;
+      background-color: #1e1e1e;
+      border-radius: 8px;
+      box-shadow: 0 6px 12px rgba(0, 0, 0, 0.2);
+      color: #ffffff;
+    }
+    h1 {
+      text-align: center;
+      margin-bottom: 20px;
+      color: #00bcd4;
+    }
+    .loading {
+      text-align: center;
+      color: #aaaaaa;
+      font-size: 18px;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 20px;
+      background-color: #2a2a2a;
+      color: #ffffff;
+    }
+    th, td {
+      border: 1px solid #333;
+      padding: 12px;
+      text-align: left;
+    }
+    th {
+      background-color: #00796b;
+      color: #ffffff;
+    }
+    tr:nth-child(even) {
+      background-color: #333;
+    }
+    tr:hover {
+      background-color: #444;
+    }
+    button.delete-btn {
+      background-color: #e53935;
+      color: #ffffff;
+      border: none;
+      padding: 8px 12px;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    button.delete-btn:hover {
+      background-color: #c62828;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Painel de Mensagens</h1>
+    <div id="loading" class="loading">Carregando mensagens...</div>
+    <table id="messagesTable" style="display:none;">
+      <thead>
+        <tr>
+          <th>Missão</th>
+          <th>Nome da Missão</th>
+          <th>Nome</th>
+          <th>E-mail</th>
+          <th>WhatsApp</th>
+          <th>Usuário</th>
+          <th>Data</th>
+          <th>Ações</th>
+        </tr>
+      </thead>
+      <tbody>
+      </tbody>
+    </table>
+  </div>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-app.js";
+    import { getDatabase, ref, onValue, remove } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-database.js";
+    import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-auth.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyBp0QRdqod_68ARBfJlDfZQBX4sg1Du_o4",
+      authDomain: "socialnetwork021-fad5a.firebaseapp.com",
+      databaseURL: "https://socialnetwork021-fad5a-default-rtdb.firebaseio.com",
+      projectId: "socialnetwork021-fad5a",
+      storageBucket: "socialnetwork021-fad5a.appspot.com",
+      messagingSenderId: "1040846806964",
+      appId: "1:1040846806964:web:b7b873170deeb8ed785ce1",
+      measurementId: "G-0NC44RCWV6"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const database = getDatabase(app);
+    const auth = getAuth(app);
+
+    const messagesTable = document.getElementById('messagesTable');
+    const loading = document.getElementById('loading');
+    const tbody = messagesTable.querySelector('tbody');
+
+    onAuthStateChanged(auth, (user) => {
+      if (user) {
+        carregarMensagens();
+      } else {
+        alert('Você precisa fazer login para acessar esta página.');
+        window.location.href = 'login.html';
+      }
+    });
+
+    function carregarMensagens() {
+      const submissionsRef = ref(database, 'arena/');
+      onValue(submissionsRef, (snapshot) => {
+        const data = snapshot.val();
+        tbody.innerHTML = '';
+        if (data) {
+          Object.keys(data).forEach((key) => {
+            const message = data[key];
+            const row = document.createElement('tr');
+
+            // Criar colunas
+            row.innerHTML = `
+              <td>${message.missionId || 'N/A'}</td>
+              <td>N/A</td>
+              <td>${message.name || 'N/A'}</td>
+              <td>${message.email || 'N/A'}</td>
+              <td>${message.whatsapp || 'N/A'}</td>
+              <td>${message.userId || 'Desconhecido'}</td>
+              <td>${new Date(message.timestamp).toLocaleString() || 'N/A'}</td>
+              <td><button class="delete-btn" data-key="${key}">Excluir</button></td>
+            `;
+
+            tbody.appendChild(row);
+
+            // Botão de excluir
+            row.querySelector('.delete-btn').addEventListener('click', () => {
+              excluirMensagem(key);
+            });
+          });
+
+          messagesTable.style.display = 'table';
+          loading.style.display = 'none';
+        } else {
+          loading.textContent = 'Nenhuma mensagem encontrada.';
+        }
+      });
+    }
+
+    function excluirMensagem(key) {
+      if (confirm('Você tem certeza que deseja excluir esta mensagem?')) {
+        const messageRef = ref(database, `arena/${key}`);
+        remove(messageRef)
+          .then(() => {
+            alert('Mensagem excluída com sucesso.');
+            carregarMensagens();
+          })
+          .catch((error) => {
+            console.error('Erro ao excluir mensagem:', error);
+          });
+      }
+    }
+  </script>
+</body>
+</html>

@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Painel de Criação de Missões</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 0;
+      background-color: #f4f4f4;
+    }
+    .container {
+      max-width: 800px;
+      margin: 20px auto;
+      padding: 20px;
+      background-color: #fff;
+      border-radius: 8px;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    }
+    h1, h2 {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+    .missao {
+      margin-bottom: 15px;
+      padding: 10px;
+      background-color: #e9ecef;
+      border-radius: 4px;
+      position: relative;
+    }
+    .missao button {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      background-color: #28a745;
+      color: #fff;
+      border: none;
+      padding: 5px 10px;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    .missao button:hover {
+      background-color: #218838;
+    }
+    .missao button.delete {
+      background-color: #dc3545;
+    }
+    .missao button.delete:hover {
+      background-color: #c82333;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Missões Criadas</h1>
+    <div id="missoesList">Carregando missões...</div>
+  </div>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-app.js";
+    import { getDatabase, ref, onValue, set, update, remove } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-database.js";
+    import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-auth.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyBp0QRdqod_68ARBfJlDfZQBX4sg1Du_o4",
+      authDomain: "socialnetwork021-fad5a.firebaseapp.com",
+      databaseURL: "https://socialnetwork021-fad5a-default-rtdb.firebaseio.com",
+      projectId: "socialnetwork021-fad5a",
+      storageBucket: "socialnetwork021-fad5a.appspot.com",
+      messagingSenderId: "1040846806964",
+      appId: "1:1040846806964:web:b7b873170deeb8ed785ce1",
+      measurementId: "G-0NC44RCWV6"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const database = getDatabase(app);
+    const auth = getAuth(app);
+
+    function carregarMissoes(user) {
+      const missoesList = document.getElementById('missoesList');
+      const missoesRef = ref(database, 'missoes/');
+
+      onValue(missoesRef, (snapshot) => {
+        const data = snapshot.val();
+        missoesList.innerHTML = '';
+
+        if (data) {
+          for (let key in data) {
+            const missao = data[key];
+            missoesList.innerHTML += `
+              <div class="missao" data-key="${key}">
+                <h3>${missao.nome}</h3>
+                <h4>${missao.subtitulo}</h4>
+                <p><strong>Descrição:</strong> ${missao.descricao}</p>
+                <p><strong>Responsável:</strong> ${missao.responsavel}</p>
+                <p><strong>Prazo Final:</strong> ${missao.prazoFinal}</p>
+                <p><strong>Status:</strong> ${missao.status}</p>
+                <button onclick="selecionarMissao('${key}', '${user.uid}')">Selecionar</button>
+                <button class="delete" onclick="deletarMissao('${key}')">Excluir</button>
+              </div>
+            `;
+          }
+        } else {
+          missoesList.innerHTML = '<p>Nenhuma missão encontrada.</p>';
+        }
+      });
+    }
+
+    window.selecionarMissao = async (missaoId, userId) => {
+      const userRef = ref(database, `missoes/${missaoId}/candidatos/${userId}`);
+      try {
+        await set(userRef, {
+          userId,
+          timestamp: new Date().toISOString()
+        });
+        alert("Você se candidatou à missão!");
+        window.location.href = "pagmission.html"; 
+      } catch (error) {
+        console.error("Erro ao selecionar a missão:", error);
+      }
+    };
+
+    window.deletarMissao = async (missaoId) => {
+      const missaoRef = ref(database, `missoes/${missaoId}`);
+      try {
+        await remove(missaoRef);
+        alert("Missão excluída com sucesso!");
+      } catch (error) {
+        console.error("Erro ao deletar a missão:", error);
+      }
+    };
+
+    onAuthStateChanged(auth, (user) => {
+      if (user) {
+        carregarMissoes(user);
+      } else {
+        alert("Faça login para acessar as missões.");
+        window.location.href = "login.html"; 
+      }
+    });
+  </script>
+</body>
+</html>

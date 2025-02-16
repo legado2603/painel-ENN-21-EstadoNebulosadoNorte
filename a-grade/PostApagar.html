@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Área de Postagens</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #111;
+      color: #fff;
+      margin: 0;
+      padding: 0;
+    }
+    .container {
+      max-width: 800px;
+      margin: auto;
+      padding: 20px;
+    }
+    .post-form, .post {
+      background: rgba(34, 34, 34, 0.9);
+      padding: 15px;
+      border-radius: 10px;
+      margin-bottom: 20px;
+      box-shadow: 0 0 10px rgba(0, 255, 0, 0.7);
+    }
+    input[type="file"], input[type="text"], textarea {
+      width: 100%;
+      margin: 10px 0;
+      padding: 10px;
+      border-radius: 5px;
+      border: none;
+    }
+    button {
+      padding: 10px 20px;
+      background-color: #00FFFF;
+      color: #111;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      font-size: 16px;
+      transition: background-color 0.3s;
+    }
+    button:hover {
+      background-color: #FF00FF;
+      color: #fff;
+    }
+    .post img, .post video {
+      max-width: 100%;
+      border-radius: 10px;
+      margin-top: 10px;
+    }
+    .actions {
+      margin-top: 10px;
+      display: flex;
+      gap: 10px;
+      align-items: center;
+    }
+    .comment-section {
+      margin-top: 10px;
+    }
+    .comment {
+      background: rgba(255, 255, 255, 0.1);
+      padding: 5px;
+      margin-top: 5px;
+      border-radius: 5px;
+      display: flex;
+      align-items: center;
+    }
+    .comment img {
+      width: 30px;
+      height: 30px;
+      border-radius: 50%;
+      margin-right: 10px;
+    }
+    .comment input {
+      width: 80%;
+      margin-top: 10px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="post-form">
+      <h2>Crie uma postagem</h2>
+      <input type="text" id="postText" placeholder="Digite sua legenda">
+      <input type="file" id="postMedia" accept="image/*,video/mp4">
+      <button id="submitPost">Postar</button>
+      <div id="formStatus"></div>
+    </div>
+    <div id="postsContainer"></div>
+  </div>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-app.js";
+    import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-auth.js";
+    import { getDatabase, ref, push, update, onValue, get, set, remove } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-database.js";
+    import { getStorage, ref as storageRef, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-storage.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyBp0QRdqod_68ARBfJlDfZQBX4sg1Du_o4",
+      authDomain: "socialnetwork021-fad5a.firebaseapp.com",
+      databaseURL: "https://socialnetwork021-fad5a-default-rtdb.firebaseio.com",
+      projectId: "socialnetwork021-fad5a",
+      storageBucket: "socialnetwork021-fad5a.appspot.com",
+      messagingSenderId: "1040846806964",
+      appId: "1:1040846806964:web:b7b873170deeb8ed785ce1",
+      measurementId: "G-0NC44RCWV6"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const database = getDatabase(app);
+    const storage = getStorage(app);
+
+    let currentUser = null;
+
+    onAuthStateChanged(auth, (user) => {
+      if (user) {
+        currentUser = user;
+        // A parte da foto de perfil agora ocorre diretamente aqui
+        const profilePicRef = storageRef(storage, `profilePhotos/${user.uid}`);
+        getDownloadURL(profilePicRef).then((url) => {
+          currentUser.profilePic = url;  // Armazene a URL da foto de perfil no objeto `currentUser`
+        }).catch((error) => {
+          console.error("Erro ao recuperar foto de perfil:", error);
+        });
+      } else {
+        alert("Você precisa estar logado para acessar esta área.");
+      }
+    });
+
+    const postFormStatus = document.getElementById("formStatus");
+    const postsContainer = document.getElementById("postsContainer");
+    const postText = document.getElementById("postText");
+    const postMedia = document.getElementById("postMedia");
+    const submitPost = document.getElementById("submitPost");
+
+    submitPost.addEventListener("click", async () => {
+      if (!currentUser) {
+        postFormStatus.innerText = "Você precisa estar logado para postar.";
+        return;
+      }
+
+      const text = postText.value.trim();
+      const file = postMedia.files[0];
+
+      if (!text && !file) {
+        postFormStatus.innerText = "Adicione texto ou mídia à sua postagem.";
+        return;
+      }
+
+      try {
+        let mediaUrl = null;
+        let mediaType = null;
+
+        if (file) {
+          const fileRef = storageRef(storage, `posts/${currentUser.uid}/${file.name}`);
+          await uploadBytes(fileRef, file);
+          mediaUrl = await getDownloadURL(fileRef);
+          mediaType = file.type.startsWith("image/") ? "image" : "video";
+        }
+
+        const postData = {
+          userId: currentUser.uid,
+          userName: currentUser.email,
+          text,
+          mediaUrl,
+          mediaType,
+          timestamp: Date.now(),
+          likes: 0,
+          comments: [],
+        };
+
+        const postsRef = ref(database, "posts");
+        await push(postsRef, postData);
+
+        postFormStatus.innerText = "Postagem criada com sucesso!";
+        postText.value = "";
+        postMedia.value = "";
+      } catch (error) {
+        postFormStatus.innerText = "Erro ao criar postagem.";
+      }
+    });
+
+    const postsRef = ref(database, "posts");
+    onValue(postsRef, (snapshot) => {
+  postsContainer.innerHTML = "";
+  snapshot.forEach((childSnapshot) => {
+    const postKey = childSnapshot.key;
+    const post = childSnapshot.val();
+
+    const postDiv = document.createElement("div");
+    postDiv.classList.add("post");
+
+    let mediaHtml = "";
+    if (post.mediaType === "image") {
+      mediaHtml = `<img src="${post.mediaUrl}" alt="Imagem da postagem">`;
+    } else if (post.mediaType === "video") {
+      mediaHtml = `<video controls><source src="${post.mediaUrl}" type="video/mp4"></video>`;
+    }
+
+    postDiv.innerHTML = `
+      <div class="post-header">
+        <img src="${currentUser.profilePic || ''}" alt="Foto do autor" class="post-photo">
+        <p><strong>${post.userName}</strong></p>
+      </div>
+      <p>${post.text || ""}</p>
+      ${mediaHtml}
+      <p><small>${new Date(post.timestamp).toLocaleString()}</small></p>
+      <div class="actions">
+        <button onclick="likePost('${postKey}')">Curtir (${post.likes || 0})</button>
+        <button onclick="sharePost('${postKey}')">Compartilhar</button>
+        <button onclick="toggleFavorite('${postKey}')">Favoritar</button>
+        ${
+          post.userId === currentUser.uid
+            ? `<button onclick="deletePost('${postKey}')">Excluir</button>`
+            : ""
+        }
+      </div>
+      <div class="comment-section">
+        <h4>Comentários:</h4>
+        <div>${post.comments?.map(comment => `<div class="comment">${comment}</div>`).join("") || ""}</div>
+        <input type="text" id="commentInput-${postKey}" placeholder="Adicionar comentário">
+        <button onclick="addComment('${postKey}')">Enviar</button>
+      </div>
+    `;
+    postsContainer.appendChild(postDiv);
+  });
+});
+window.deletePost = async (postKey) => {
+  const confirmDelete = confirm("Você tem certeza de que deseja excluir esta publicação?");
+  if (confirmDelete) {
+    try {
+      const postRef = ref(database, `posts/${postKey}`);
+      await remove(postRef);
+
+      // Opcional: Remova o arquivo de mídia associado à postagem (se houver)
+      const postSnap = await get(postRef);
+      const postData = postSnap.val();
+      if (postData?.mediaUrl) {
+        const fileRef = storageRef(storage, postData.mediaUrl);
+        await remove(fileRef);
+      }
+
+      alert("Postagem excluída com sucesso!");
+    } catch (error) {
+      console.error("Erro ao excluir postagem:", error);
+      alert("Não foi possível excluir a postagem. Tente novamente mais tarde.");
+    }
+  }
+};
+
+    window.likePost = async (postKey) => {
+      const postRef = ref(database, `posts/${postKey}`);
+      const postSnap = await get(postRef);
+      const postData = postSnap.val();
+  
+      // Referência ao local onde as curtidas por usuário são armazenadas
+      const userLikesRef = ref(database, `posts/${postKey}/likes/${currentUser.uid}`);
+      const userLikeSnap = await get(userLikesRef);
+  
+      // Verifica se o usuário já curtiu
+      if (userLikeSnap.exists()) {
+        alert("Você já curtiu essa postagem!");
+        return;
+      }
+  
+      // Se o usuário ainda não curtiu, atualiza o contador de curtidas e marca o usuário como "curtiu"
+      const newLikesCount = (postData.likes || 0) + 1;
+  
+      // Atualiza a quantidade de curtidas no post
+      await update(postRef, { likes: newLikesCount });
+  
+      // Marca que o usuário curtiu essa postagem
+      await set(userLikesRef, true);
+  
+      // Após a atualização, a interface precisa ser atualizada para refletir a nova quantidade de curtidas
+      alert("Postagem curtida com sucesso!");
+    };
+
+    window.addComment = async (postKey) => {
+      const commentInput = document.getElementById(`commentInput-${postKey}`);
+      const comment = commentInput.value.trim();
+      if (comment) {
+        const postRef = ref(database, `posts/${postKey}`);
+        const postSnap = await get(postRef);
+        const postData = postSnap.val();
+        const comments = postData.comments || [];
+        comments.push(comment);
+        await update(postRef, { comments });
+        commentInput.value = "";
+      }
+    };
+
+    window.sharePost = (postKey) => {
+      const postUrl = `${window.location.href}?post=${postKey}`;
+      navigator.clipboard.writeText(postUrl).then(() => {
+        alert("Link copiado para a área de transferência!");
+      });
+    };
+
+    window.toggleFavorite = async (postKey) => {
+      const userFavoritesRef = ref(database, `users/${currentUser.uid}/favorites/${postKey}`);
+      const favoriteSnap = await get(userFavoritesRef);
+      if (favoriteSnap.exists()) {
+        // Já é favorito, remove.
+        await remove(userFavoritesRef);
+        alert("Post removido dos favoritos.");
+      } else {
+        // Adiciona aos favoritos.
+        await set(userFavoritesRef, true);
+        alert("Post favoritado!");
+      }
+    };
+  </script>
+</body>
+</html>

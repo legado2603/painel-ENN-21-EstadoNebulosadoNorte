@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Painel de Logo</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 0;
+      background-color: #f4f4f4;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+    }
+    .container {
+      text-align: center;
+    }
+    img {
+      max-width: 100%;
+      height: auto;
+      border-radius: 8px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Painel de Logo</h1>
+    <img id="uploadedLogo" src="" alt="A-Grade Logo">
+  </div>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-app.js";
+    import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-database.js";
+    import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-auth.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyBp0QRdqod_68ARBfJlDfZQBX4sg1Du_o4",
+      authDomain: "socialnetwork021-fad5a.firebaseapp.com",
+      databaseURL: "https://socialnetwork021-fad5a-default-rtdb.firebaseio.com",
+      projectId: "socialnetwork021-fad5a",
+      storageBucket: "socialnetwork021-fad5a.appspot.com",
+      messagingSenderId: "1040846806964",
+      appId: "1:1040846806964:web:b7b873170deeb8ed785ce1",
+      measurementId: "G-0NC44RCWV6"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const database = getDatabase(app);
+    const auth = getAuth(app);
+
+    // Referência correta para o logo no Realtime Database
+    const logoRef = ref(database, 'config/logo');
+
+    // Função para carregar logo
+    function carregarLogo() {
+      onValue(logoRef, (snapshot) => {
+        const data = snapshot.val();
+        if (data && data.url) {
+          document.getElementById('uploadedLogo').src = data.url;
+        } else {
+          console.error("Imagem não encontrada no Realtime Database.");
+        }
+      });
+    }
+
+    // Verificar se o usuário está autenticado antes de carregar o logo
+    onAuthStateChanged(auth, (user) => {
+      if (user) {
+        carregarLogo();
+      } else {
+        console.error("Usuário não autenticado.");
+      }
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Painel de Publicação</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #121212;
+      color: #fff;
+      text-align: center;
+      margin: 0;
+      padding: 20px;
+    }
+    input, textarea, button {
+      width: 100%;
+      margin: 10px 0;
+      padding: 10px;
+      font-size: 16px;
+      border-radius: 5px;
+      border: 2px solid #00FFFF;
+    }
+    button {
+      background-color: #00FFFF;
+      cursor: pointer;
+    }
+    button:hover {
+      background-color: #00cccc;
+    }
+    input[type="file"] {
+      background-color: #121212;
+    }
+  </style>
+</head>
+<body>
+  <h1>Painel de Publicação</h1>
+  <p id="status"></p>
+  
+  <!-- Formulário de Publicação -->
+  <div>
+    <input type="text" id="title" placeholder="Título da publicação" />
+    <input type="text" id="subtitle" placeholder="Subtítulo" />
+    <textarea id="description" rows="4" placeholder="Descrição da publicação"></textarea>
+    
+    <div>
+      <label for="imageUpload">Selecione uma imagem (JPG, PNG, GIF):</label>
+      <input type="file" id="imageUpload" accept="image/*">
+    </div>
+
+    <div>
+      <label for="videoUpload">Selecione um vídeo (MP4, AVI, MOV):</label>
+      <input type="file" id="videoUpload" accept="video/*">
+    </div>
+    
+    <input type="text" id="tags" placeholder="Tags (separadas por vírgula)" />
+    <input type="date" id="date" placeholder="Data da publicação" />
+    
+    <button id="postBtn" disabled>Postar</button>
+  </div>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.17.1/firebase-app.js";
+    import { getStorage, ref as storageRef, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/9.17.1/firebase-storage.js";
+    import { getDatabase, ref as dbRef, set } from "https://www.gstatic.com/firebasejs/9.17.1/firebase-database.js";
+    import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.17.1/firebase-auth.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyBp0QRdqod_68ARBfJlDfZQBX4sg1Du_o4",
+      authDomain: "socialnetwork021-fad5a.firebaseapp.com",
+      databaseURL: "https://socialnetwork021-fad5a-default-rtdb.firebaseio.com",
+      projectId: "socialnetwork021-fad5a",
+      storageBucket: "socialnetwork021-fad5a.appspot.com",
+      messagingSenderId: "1040846806964",
+      appId: "1:1040846806964:web:b7b873170deeb8ed785ce1",
+      measurementId: "G-0NC44RCWV6"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const storage = getStorage(app);
+    const database = getDatabase(app);
+    const auth = getAuth(app);
+
+    const title = document.getElementById('title');
+    const subtitle = document.getElementById('subtitle');
+    const description = document.getElementById('description');
+    const imageUpload = document.getElementById('imageUpload');
+    const videoUpload = document.getElementById('videoUpload');
+    const tags = document.getElementById('tags');
+    const date = document.getElementById('date');
+    const postBtn = document.getElementById('postBtn');
+    const statusText = document.getElementById('status');
+
+    // Função para enviar os dados para o Firebase
+    const postPublication = async () => {
+      try {
+        const user = auth.currentUser;
+        if (!user) {
+          alert("Você precisa estar logado para postar.");
+          return;
+        }
+
+        // Coletando os dados do formulário
+        const postData = {
+          title: title.value,
+          subtitle: subtitle.value,
+          description: description.value,
+          tags: tags.value.split(',').map(tag => tag.trim()), // Converter tags para um array
+          date: date.value,
+          userId: user.uid,
+          createdAt: new Date().toISOString(),
+        };
+
+        // Upload da imagem, se houver
+        if (imageUpload.files[0]) {
+          const imageFile = imageUpload.files[0];
+          const imageRef = storageRef(storage, `images/${user.uid}_${imageFile.name}`);
+          await uploadBytes(imageRef, imageFile);
+          const imageUrl = await getDownloadURL(imageRef);
+          postData.image = imageUrl;
+        }
+
+        // Upload do vídeo, se houver
+        if (videoUpload.files[0]) {
+          const videoFile = videoUpload.files[0];
+          const videoRef = storageRef(storage, `videos/${user.uid}_${videoFile.name}`);
+          await uploadBytes(videoRef, videoFile);
+          const videoUrl = await getDownloadURL(videoRef);
+          postData.video = videoUrl;
+        }
+
+        // Enviar os dados para o Firebase Realtime Database
+        const postRef = dbRef(database, 'publications/' + new Date().getTime()); // Gera um ID único para cada publicação
+        await set(postRef, postData);
+
+        alert("Publicação feita com sucesso!");
+        title.value = "";
+        subtitle.value = "";
+        description.value = "";
+        tags.value = "";
+        date.value = "";
+      } catch (error) {
+        console.error("Erro ao postar a publicação:", error);
+        alert("Erro ao fazer a publicação.");
+      }
+    };
+
+    // Verificar se o usuário está autenticado
+    onAuthStateChanged(auth, (user) => {
+      if (user) {
+        statusText.textContent = `Autenticado como: ${user.email}`;
+        postBtn.disabled = false;
+      } else {
+        statusText.textContent = "Usuário não autenticado. Faça login para continuar.";
+        postBtn.disabled = true;
+      }
+    });
+
+    // Evento para o botão de post
+    postBtn.addEventListener('click', postPublication);
+  </script>
+</body>
+</html>

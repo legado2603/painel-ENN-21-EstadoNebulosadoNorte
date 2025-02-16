@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Questionário Firebase</title>
+  <style>
+    /* Estilo futurista com cores neon */
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #121212;
+      color: #00FFFF;
+      margin: 0;
+      padding: 0;
+    }
+
+    .container {
+      max-width: 800px;
+      margin: auto;
+      padding: 20px;
+    }
+
+    .data-container {
+      margin-bottom: 20px;
+      padding: 15px;
+      border: 1px solid #00FFFF;
+      border-radius: 8px;
+    }
+
+    .data-title {
+      margin-bottom: 10px;
+      font-weight: bold;
+    }
+
+    .item {
+      margin: 5px 0;
+    }
+
+    button {
+      background-color: #00FFFF;
+      color: #121212;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 5px;
+      cursor: pointer;
+      transition: 0.3s ease-in-out;
+    }
+
+    button:hover {
+      background-color: #FF00FF;
+    }
+
+    .error-message {
+      color: #FF0000;
+      margin-top: 20px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Dados do Firebase</h1>
+    <div id="quiz"></div>
+    <div id="rooms"></div>
+    <div id="general"></div>
+    <div id="onlineUsers"></div>
+    <div id="users"></div>
+    <button id="loadData">Carregar Dados</button>
+    <p id="errorMessage" class="error-message"></p>
+  </div>
+
+  <script type="module"
+    // Importar as funções necessárias do SDK do Firebase
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-app.js";
+    import { getDatabase, ref, get } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-database.js";
+    import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-auth.js";
+
+    // Configuração do Firebase
+    const firebaseConfig = {
+      apiKey: "AIzaSyBp0QRdqod_68ARBfJlDfZQBX4sg1Du_o4",
+      authDomain: "socialnetwork021-fad5a.firebaseapp.com",
+      databaseURL: "https://socialnetwork021-fad5a-default-rtdb.firebaseio.com",
+      projectId: "socialnetwork021-fad5a",
+      storageBucket: "socialnetwork021-fad5a.appspot.com",
+      messagingSenderId: "1040846806964",
+      appId: "1:1040846806964:web:b7b873170deeb8ed785ce1",
+      measurementId: "G-0NC44RCWV6"
+    };
+
+    // Inicializa o Firebase
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const rtdb = getDatabase(app);
+
+    console.log("Firebase inicializado com sucesso");
+
+    // Função para carregar dados do Firebase (somente para usuários autenticados)
+    function loadData() {
+      const user = auth.currentUser;
+      if (user) {
+        // Referência para o Realtime Database
+        const quizRef = ref(rtdb, 'quiz');
+        const roomsRef = ref(rtdb, 'rooms');
+        const generalRef = ref(rtdb, 'general');
+        const onlineUsersRef = ref(rtdb, 'onlineUsers');
+        const usersRef = ref(rtdb, 'users');
+
+        // Função para ler os dados de cada nó
+        Promise.all([
+          get(quizRef),
+          get(roomsRef),
+          get(generalRef),
+          get(onlineUsersRef),
+          get(usersRef)
+        ])
+        .then(([quizSnapshot, roomsSnapshot, generalSnapshot, onlineUsersSnapshot, usersSnapshot]) => {
+          if (quizSnapshot.exists()) {
+            const quizData = quizSnapshot.val();
+            displayData('quiz', quizData);
+          } else {
+            console.log("Sem dados de quiz.");
+          }
+
+          if (roomsSnapshot.exists()) {
+            const roomsData = roomsSnapshot.val();
+            displayData('rooms', roomsData);
+          } else {
+            console.log("Sem dados de rooms.");
+          }
+
+          if (generalSnapshot.exists()) {
+            const generalData = generalSnapshot.val();
+            displayData('general', generalData);
+          } else {
+            console.log("Sem dados de general.");
+          }
+
+          if (onlineUsersSnapshot.exists()) {
+            const onlineUsersData = onlineUsersSnapshot.val();
+            displayData('onlineUsers', onlineUsersData);
+          } else {
+            console.log("Sem dados de onlineUsers.");
+          }
+
+          if (usersSnapshot.exists()) {
+            const usersData = usersSnapshot.val();
+            displayData('users', usersData);
+          } else {
+            console.log("Sem dados de users.");
+          }
+        })
+        .catch((error) => {
+          console.error("Erro ao buscar dados do Firebase:", error);
+        });
+      } else {
+        const errorMessage = document.getElementById("errorMessage");
+        errorMessage.textContent = "Você precisa estar autenticado para carregar os dados.";
+      }
+    }
+
+    // Função para exibir os dados no HTML
+    function displayData(section, data) {
+      const container = document.getElementById(section);
+      container.innerHTML = `<h3 class="data-title">Dados de ${section}</h3>`;
+      
+      if (typeof data === 'object') {
+        Object.keys(data).forEach((key) => {
+          const div = document.createElement('div');
+          div.classList.add('data-container');
+          div.innerHTML = `<strong>${key}:</strong><pre>${JSON.stringify(data[key], null, 2)}</pre>`;
+          container.appendChild(div);
+        });
+      } else {
+        const div = document.createElement('div');
+        div.classList.add('data-container');
+        div.textContent = data;
+        container.appendChild(div);
+      }
+    }
+
+    // Evento para verificar o estado de autenticação
+    onAuthStateChanged(auth, (user) => {
+      if (user) {
+        console.log(`Usuário autenticado: ${user.email}`);
+      } else {
+        console.log("Nenhum usuário autenticado.");
+      }
+    });
+
+    // Evento para carregar os dados ao clicar no botão
+    document.getElementById('loadData').addEventListener('click', loadData);
+  </script>
+</body>
+</html>

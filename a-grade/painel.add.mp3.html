@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Carregar Música MP3</title>
+  <style>
+    body {
+      font-family: 'Arial', sans-serif;
+      background-color: #0e1117;
+      color: #00ffff;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      margin: 0;
+      flex-direction: column;
+      text-align: center;
+    }
+    .panel {
+      background-color: #1e1e1e;
+      padding: 20px;
+      border-radius: 10px;
+      box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+      width: 300px;
+    }
+    input, select {
+      width: 100%;
+      padding: 8px;
+      margin: 5px 0;
+      border: none;
+      border-radius: 5px;
+    }
+    button {
+      padding: 10px;
+      background-color: #1e90ff;
+      border: none;
+      border-radius: 5px;
+      color: #fff;
+      font-size: 16px;
+      cursor: pointer;
+      margin-top: 10px;
+    }
+    button:hover {
+      background-color: #005cbf;
+    }
+    .message {
+      margin-top: 10px;
+      color: #00ff00;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="panel" id="uploadPanel" style="display: none;">
+    <h2>Carregar Música</h2>
+    <input type="file" id="fileInput" accept=".mp3">
+
+    <select id="genreSelect">
+      <option value="">Selecione um gênero</option>
+    </select>
+    <input type="text" id="genreInput" placeholder="Ou digite um novo gênero">
+
+    <select id="artistSelect">
+      <option value="">Selecione um cantor</option>
+    </select>
+    <input type="text" id="artistInput" placeholder="Ou digite um novo cantor">
+
+    <select id="albumSelect">
+      <option value="">Selecione um álbum</option>
+    </select>
+    <input type="text" id="albumInput" placeholder="Ou digite um novo álbum">
+
+    <input type="text" id="songInput" placeholder="Nome da Música">
+    <input type="time" id="timeInput" placeholder="Horário de Reprodução">
+
+    <button id="uploadButton">Carregar</button>
+    <div id="message" class="message"></div>
+  </div>
+
+  <p id="authMessage" class="message"></p>
+
+  <!-- Firebase SDK -->
+  <script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/9.17.2/firebase-app.js";
+  import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.17.2/firebase-auth.js";
+  import { getDatabase, ref, onValue, push } from "https://www.gstatic.com/firebasejs/9.17.2/firebase-database.js";
+  import { getStorage, ref as storageRef, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/9.17.2/firebase-storage.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyBp0QRdqod_68ARBfJlDfZQBX4sg1Du_o4",
+    authDomain: "socialnetwork021-fad5a.firebaseapp.com",
+    databaseURL: "https://socialnetwork021-fad5a-default-rtdb.firebaseio.com",
+    projectId: "socialnetwork021-fad5a",
+    storageBucket: "socialnetwork021-fad5a.appspot.com",
+    messagingSenderId: "1040846806964",
+    appId: "1:1040846806964:web:b7b873170deeb8ed785ce1",
+    measurementId: "G-0NC44RCWV6"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const auth = getAuth(app);
+  const database = getDatabase(app);
+  const storage = getStorage(app);
+
+  const uploadPanel = document.getElementById('uploadPanel');
+  const authMessage = document.getElementById('authMessage');
+  const uploadButton = document.getElementById('uploadButton');
+  const message = document.getElementById('message');
+
+  const genreSelect = document.getElementById('genreSelect');
+  const artistSelect = document.getElementById('artistSelect');
+  const albumSelect = document.getElementById('albumSelect');
+
+  onAuthStateChanged(auth, (user) => {
+    if (user) {
+      uploadPanel.style.display = "block";
+      authMessage.textContent = "";
+      loadExistingData();
+    } else {
+      uploadPanel.style.display = "none";
+      authMessage.textContent = "Faça login no Firebase antes de continuar!";
+    }
+  });
+
+  function loadExistingData() {
+    const musicRef = ref(database, "mp3_library");
+
+    onValue(musicRef, (snapshot) => {
+      if (snapshot.exists()) {
+        genreSelect.innerHTML = '<option value="">Selecione um gênero</option>';
+        const genres = Object.keys(snapshot.val());
+        genres.forEach(genre => {
+          genreSelect.innerHTML += `<option value="${genre}">${genre}</option>`;
+        });
+
+        genreSelect.addEventListener("change", () => {
+          artistSelect.innerHTML = '<option value="">Selecione um cantor</option>';
+          const selectedGenre = genreSelect.value;
+          if (selectedGenre && snapshot.val()[selectedGenre]) {
+            const artists = Object.keys(snapshot.val()[selectedGenre]);
+            artists.forEach(artist => {
+              artistSelect.innerHTML += `<option value="${artist}">${artist}</option>`;
+            });
+          }
+        });
+
+        artistSelect.addEventListener("change", () => {
+          albumSelect.innerHTML = '<option value="">Selecione um álbum</option>';
+          const selectedGenre = genreSelect.value;
+          const selectedArtist = artistSelect.value;
+          if (selectedGenre && selectedArtist && snapshot.val()[selectedGenre][selectedArtist]) {
+            const albums = Object.keys(snapshot.val()[selectedGenre][selectedArtist]);
+            albums.forEach(album => {
+              albumSelect.innerHTML += `<option value="${album}">${album}</option>`;
+            });
+          }
+        });
+      }
+    });
+  }
+
+  uploadButton.addEventListener('click', () => {
+    const user = auth.currentUser;
+    if (!user) {
+      message.textContent = "Faça login antes de enviar arquivos!";
+      return;
+    }
+
+    const file = document.getElementById('fileInput').files[0];
+    const genre = genreSelect.value || document.getElementById('genreInput').value.trim();
+    const artist = artistSelect.value || document.getElementById('artistInput').value.trim();
+    const album = albumSelect.value || document.getElementById('albumInput').value.trim();
+    const song = document.getElementById('songInput').value.trim();
+    const time = document.getElementById('timeInput').value;
+
+    if (!file || !artist || !song || !genre || !album || !time) {
+      message.textContent = "Preencha todos os campos!";
+      return;
+    }
+
+    if (file.type !== "audio/mpeg") {
+      message.textContent = "Selecione um arquivo MP3!";
+      return;
+    }
+
+    message.textContent = "Carregando...";
+
+    const fileRef = storageRef(storage, `mp3_files/${artist}/${album}/${file.name}`);
+
+    uploadBytes(fileRef, file).then(() => {
+      return getDownloadURL(fileRef);
+    }).then((downloadURL) => {
+      const musicData = { artist, song, genre, album, time, fileURL: downloadURL, uploadedBy: user.email };
+
+      const musicRef = ref(database, `mp3_library/${genre}/${artist}/${album}`);
+      push(musicRef, musicData).then(() => {
+        message.textContent = "Música adicionada com sucesso!";
+        loadExistingData();
+      });
+    }).catch((error) => {
+      message.textContent = "Erro no upload: " + error.message;
+    });
+  });
+  </script>
+
+</body>
+</html>

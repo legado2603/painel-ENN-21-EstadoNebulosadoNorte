@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Painel de Banner 2</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #121212;
+      color: #fff;
+      text-align: center;
+      margin: 0;
+      padding: 20px;
+    }
+    #banner {
+      max-width: 100%;
+      height: auto;
+      margin-bottom: 20px;
+      border: 2px solid #FF00FF;
+      box-shadow: 0 0 15px #FF00FF;
+    }
+    .input-group {
+      margin-bottom: 20px;
+    }
+    input[type="file"] {
+      margin: 10px 0;
+    }
+    button {
+      background-color: #FF00FF;
+      color: #121212;
+      border: none;
+      padding: 10px 20px;
+      cursor: pointer;
+      font-size: 16px;
+      border-radius: 5px;
+    }
+    button:hover {
+      background-color: #cc00cc;
+    }
+    #status {
+      margin-top: 20px;
+    }
+  </style>
+</head>
+<body>
+  <h1>Gerenciador de Banner 2</h1>
+  <img id="banner" src="" alt="Banner atual" />
+  <div class="input-group">
+    <label for="imageUpload">Selecione uma nova imagem para o banner 2:</label><br>
+    <input type="file" id="imageUpload" accept="image/*">
+  </div>
+  <button id="uploadBtn" disabled>Enviar e Atualizar Banner 2</button>
+  <p id="status"></p>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.17.1/firebase-app.js";
+    import { getStorage, ref as storageRef, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/9.17.1/firebase-storage.js";
+    import { getDatabase, ref as dbRef, set, get } from "https://www.gstatic.com/firebasejs/9.17.1/firebase-database.js";
+    import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.17.1/firebase-auth.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyBp0QRdqod_68ARBfJlDfZQBX4sg1Du_o4",
+      authDomain: "socialnetwork021-fad5a.firebaseapp.com",
+      databaseURL: "https://socialnetwork021-fad5a-default-rtdb.firebaseio.com",
+      projectId: "socialnetwork021-fad5a",
+      storageBucket: "socialnetwork021-fad5a.appspot.com",
+      messagingSenderId: "1040846806964",
+      appId: "1:1040846806964:web:b7b873170deeb8ed785ce1",
+      measurementId: "G-0NC44RCWV6"
+    };
+
+    // Inicializar Firebase
+    const app = initializeApp(firebaseConfig);
+    const storage = getStorage(app);
+    const database = getDatabase(app);
+    const auth = getAuth(app);
+
+    // Elementos do DOM
+    const banner = document.getElementById('banner');
+    const imageUpload = document.getElementById('imageUpload');
+    const uploadBtn = document.getElementById('uploadBtn');
+    const statusText = document.getElementById('status');
+
+    // Função para carregar o banner salvo no Realtime Database
+    const loadBanner = async () => {
+      try {
+        const dbRefBanner = dbRef(database, 'banner2'); // Caminho correto para o banner2
+        const snapshot = await get(dbRefBanner);
+
+        if (snapshot.exists()) {
+          banner.src = snapshot.val(); // Atualiza o src do banner
+          banner.alt = "Banner 2 carregado";
+        } else {
+          banner.alt = "Nenhum banner definido para banner 2";
+        }
+      } catch (error) {
+        console.error("Erro ao carregar o banner 2:", error);
+        banner.alt = "Erro ao carregar o banner";
+      }
+    };
+
+    // Função para fazer upload de nova imagem e atualizar o banner 2
+    const uploadImage = async () => {
+      try {
+        const file = imageUpload.files[0];
+        if (!file) {
+          alert("Selecione uma imagem primeiro.");
+          return;
+        }
+
+        const storagePath = `banners2/${file.name}`;
+        const storageReference = storageRef(storage, storagePath);
+
+        // Faz upload da imagem para o Firebase Storage
+        await uploadBytes(storageReference, file);
+
+        // Obter URL do arquivo salvo no Storage
+        const fileURL = await getDownloadURL(storageReference);
+
+        // Salvar URL no Realtime Database
+        const dbRefBanner = dbRef(database, 'banner2');
+        await set(dbRefBanner, fileURL);
+
+        // Atualizar o banner exibido
+        banner.src = fileURL;
+        alert("Banner 2 atualizado com sucesso!");
+      } catch (error) {
+        console.error("Erro ao fazer upload da imagem:", error);
+        alert("Erro ao atualizar o banner 2.");
+      }
+    };
+
+    // Verificar se o usuário está autenticado
+    onAuthStateChanged(auth, (user) => {
+      if (user) {
+        statusText.textContent = `Autenticado como: ${user.email}`;
+        uploadBtn.disabled = false; // Habilitar o botão de upload
+        loadBanner(); // Carregar o banner
+      } else {
+        statusText.textContent = "Usuário não autenticado. Faça login para continuar.";
+        uploadBtn.disabled = true; // Desabilitar o botão de upload
+        banner.alt = "Autenticação necessária";
+      }
+    });
+
+    // Adicionar evento ao botão de upload
+    uploadBtn.addEventListener('click', uploadImage);
+  </script>
+</body>
+</html>

@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Painel de Quiz</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #121212;
+            color: white;
+            text-align: center;
+            margin: 0;
+            padding: 20px;
+        }
+        .container {
+            max-width: 600px;
+            margin: auto;
+            padding: 20px;
+            border-radius: 10px;
+            background-color: #1e1e1e;
+            box-shadow: 0px 0px 10px rgba(0, 255, 255, 0.5);
+        }
+        input, textarea, button, select {
+            width: 100%;
+            padding: 10px;
+            margin: 10px 0;
+            border: 1px solid cyan;
+            background: #333;
+            color: white;
+            border-radius: 5px;
+        }
+        button {
+            cursor: pointer;
+            background-color: cyan;
+            color: black;
+            font-weight: bold;
+        }
+        .quiz-item {
+            background: #222;
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 5px;
+            text-align: left;
+        }
+        .hidden {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>Painel de Quiz</h1>
+
+    <div class="container" id="quizForm">
+        <h2>Criar Pergunta</h2>
+        <input type="text" id="title" placeholder="Título">
+        <input type="text" id="subtitle" placeholder="Subtítulo">
+        <textarea id="description" placeholder="Descrição"></textarea>
+        <input type="text" id="theme" placeholder="Tema">
+        
+        <h3>Respostas</h3>
+        <input type="text" id="answer1" placeholder="Resposta 1">
+        <input type="text" id="answer2" placeholder="Resposta 2">
+        <input type="text" id="answer3" placeholder="Resposta 3">
+        <input type="text" id="answer4" placeholder="Resposta 4">
+        
+        <label for="correctAnswer">Escolha a resposta correta:</label>
+        <select id="correctAnswer">
+            <option value="1">Resposta 1</option>
+            <option value="2">Resposta 2</option>
+            <option value="3">Resposta 3</option>
+            <option value="4">Resposta 4</option>
+        </select>
+
+        <input type="file" id="mediaFile" accept="image/*,video/*">
+        <button id="submitQuiz">Salvar Pergunta</button>
+    </div>
+
+    <div class="container">
+        <h2>Perguntas Criadas</h2>
+        <div id="quizList"></div>
+    </div>
+
+    <script type="module">
+        // Importando Firebase
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.17.2/firebase-app.js";
+        import { getDatabase, ref, push, set, onValue } from "https://www.gstatic.com/firebasejs/9.17.2/firebase-database.js";
+        import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.17.2/firebase-auth.js";
+        import { getStorage, ref as storageRef, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/9.17.2/firebase-storage.js";
+
+        // Configuração do Firebase
+        const firebaseConfig = {
+          apiKey: "AIzaSyBp0QRdqod_68ARBfJlDfZQBX4sg1Du_o4",
+          authDomain: "socialnetwork021-fad5a.firebaseapp.com",
+          databaseURL: "https://socialnetwork021-fad5a-default-rtdb.firebaseio.com",
+          projectId: "socialnetwork021-fad5a",
+          storageBucket: "socialnetwork021-fad5a.appspot.com",
+          messagingSenderId: "1040846806964",
+          appId: "1:1040846806964:web:b7b873170deeb8ed785ce1",
+          measurementId: "G-0NC44RCWV6"
+        };
+
+        // Inicializando Firebase
+        const app = initializeApp(firebaseConfig);
+        const db = getDatabase(app);
+        const auth = getAuth(app);
+        const storage = getStorage(app);
+
+        // Autenticação anônima
+        onAuthStateChanged(auth, (user) => {
+            if (!user) {
+                signInAnonymously(auth).catch((error) => {
+                    console.error("Erro ao autenticar:", error);
+                });
+            }
+        });
+
+        // Criando perguntas
+        document.getElementById("submitQuiz").addEventListener("click", async () => {
+            const title = document.getElementById("title").value;
+            const subtitle = document.getElementById("subtitle").value;
+            const description = document.getElementById("description").value;
+            const theme = document.getElementById("theme").value;
+            const answer1 = document.getElementById("answer1").value;
+            const answer2 = document.getElementById("answer2").value;
+            const answer3 = document.getElementById("answer3").value;
+            const answer4 = document.getElementById("answer4").value;
+            const correctAnswer = document.getElementById("correctAnswer").value;
+            const file = document.getElementById("mediaFile").files[0];
+
+            if (!title || !subtitle || !description || !theme || !answer1 || !answer2 || !answer3 || !answer4) {
+                alert("Preencha todos os campos.");
+                return;
+            }
+
+            let fileUrl = "";
+            if (file) {
+                const fileRef = storageRef(storage, "quizMedia/" + file.name);
+                await uploadBytes(fileRef, file);
+                fileUrl = await getDownloadURL(fileRef);
+            }
+
+            const quizRef = push(ref(db, "quizzes"));
+            set(quizRef, {
+                title,
+                subtitle,
+                description,
+                theme,
+                answers: [answer1, answer2, answer3, answer4],
+                correctAnswer,
+                media: fileUrl
+            });
+
+            // Limpar os campos
+            document.getElementById("title").value = "";
+            document.getElementById("subtitle").value = "";
+            document.getElementById("description").value = "";
+            document.getElementById("theme").value = "";
+            document.getElementById("answer1").value = "";
+            document.getElementById("answer2").value = "";
+            document.getElementById("answer3").value = "";
+            document.getElementById("answer4").value = "";
+            document.getElementById("correctAnswer").value = "1";
+            document.getElementById("mediaFile").value = "";
+        });
+
+        // Exibir perguntas
+        const quizList = document.getElementById("quizList");
+        onValue(ref(db, "quizzes"), (snapshot) => {
+            quizList.innerHTML = "";
+            snapshot.forEach((childSnapshot) => {
+                const data = childSnapshot.val();
+                const quizItem = document.createElement("div");
+                quizItem.classList.add("quiz-item");
+
+                quizItem.innerHTML = `
+                    <h3>${data.title}</h3>
+                    <h4>${data.subtitle}</h4>
+                    <p><strong>Descrição:</strong> ${data.description}</p>
+                    <p><strong>Tema:</strong> ${data.theme}</p>
+                    <p><strong>Respostas:</strong> 
+                        1) ${data.answers[0]}<br>
+                        2) ${data.answers[1]}<br>
+                        3) ${data.answers[2]}<br>
+                        4) ${data.answers[3]}
+                    </p>
+                    <p><strong>Resposta correta:</strong> ${data.answers[data.correctAnswer - 1]}</p>
+                    ${data.media ? `<img src="${data.media}" width="100%">` : ""}
+                `;
+
+                quizList.appendChild(quizItem);
+            });
+        });
+    </script>
+
+</body>
+</html>

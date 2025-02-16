@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Administração ENN</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: Arial, sans-serif;
+        }
+        body {
+            background: #000;
+            color: #fff;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+        .login-container {
+            background: rgba(0, 0, 0, 0.8);
+            padding: 20px;
+            border-radius: 8px;
+            text-align: center;
+            box-shadow: 0 0 10px cyan;
+            width: 100%;
+            max-width: 350px;
+        }
+        .login-container h2 {
+            margin-bottom: 5px;
+        }
+        .login-container h6 {
+            margin-bottom: 15px;
+            font-size: 12px;
+            color: #00ffff;
+        }
+        .login-container input {
+            width: 100%;
+            padding: 10px;
+            margin: 10px 0;
+            border: none;
+            border-radius: 5px;
+            background: #222;
+            color: #fff;
+        }
+        .login-container button {
+            width: 100%;
+            padding: 10px;
+            border: none;
+            border-radius: 5px;
+            background: cyan;
+            color: #000;
+            cursor: pointer;
+            transition: 0.3s;
+        }
+        .login-container button:hover {
+            background: #00ffff;
+        }
+        .error {
+            color: red;
+            margin-top: 10px;
+        }
+        .footer {
+            position: absolute;
+            bottom: 0;
+            width: 100%;
+            background-color: #161b22;
+            color: #00ffff;
+            padding: 10px 0;
+            text-align: center;
+            border-top: 1px solid #ff00ff;
+            box-shadow: 0 -3px 10px rgba(0, 255, 255, 0.2);
+            font-size: 14px;
+        }
+        .footer-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 10px;
+        }
+        .footer p {
+            margin: 0;
+            font-size: 12px;
+            color: #ff00ff;
+        }
+        .footer-links {
+            margin-top: 5px;
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        .footer-link {
+            color: #00ffff;
+            text-decoration: none;
+            font-size: 12px;
+            transition: color 0.3s ease;
+        }
+        .footer-link:hover {
+            color: #ff00ff;
+            text-decoration: underline;
+        }
+        #status {
+      font-weight: bold;
+      font-size: 1.5rem;
+      color: #ff0000;
+      animation: pulse 1s infinite alternate;
+    }
+    #status.online {
+      color: #00ff00;
+    }
+    @keyframes pulse {
+      0% {
+        transform: scale(1);
+      }
+      100% {
+        transform: scale(1.1);
+      }
+    }
+    </style>
+</head>
+<body>
+
+    <div class="login-container">
+        <h2>A-Grade<br>Painel do ADM</h2>
+        <h6>ENN - Estado Nebulosa do Norte</h6>
+        <input type="email" id="email" placeholder="E-mail ou Seu ID@agrade.enn">
+        <input type="password" id="password" placeholder="Senha">
+        <button onclick="login()">Entrar</button>
+        <p id="error-message" class="error"></p>
+    </div>
+  <p>Conexão: <span id="status">Verificando...</span></p>
+
+    <div class="footer">
+        <div class="footer-container">
+            <p>&copy; 2025 Estado Nebulosa do Norte - <span style="color: #ff00ff;">A-Grade</span>, a rede social oficial do ENN. Junte-se à nossa jornada para um futuro conectado!</p>
+        </div>
+    </div>
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-app.js";
+    import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-database.js";
+    import { getAuth, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-auth.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyBp0QRdqod_68ARBfJlDfZQBX4sg1Du_o4",
+      authDomain: "socialnetwork021-fad5a.firebaseapp.com",
+      databaseURL: "https://socialnetwork021-fad5a-default-rtdb.firebaseio.com",
+      projectId: "socialnetwork021-fad5a",
+      storageBucket: "socialnetwork021-fad5a.appspot.com",
+      messagingSenderId: "1040846806964",
+      appId: "1:1040846806964:web:b7b873170deeb8ed785ce1",
+      measurementId: "G-0NC44RCWV6"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const database = getDatabase(app);
+    const auth = getAuth(app);
+
+    // Função para carregar o fundo do Firebase
+    function loadBackground() {
+      const backgroundRef = ref(database, 'backgrounds/login'); // Referência ao nó "backgrounds/login" no Firebase
+
+      onValue(backgroundRef, (snapshot) => {
+        const base64Image = snapshot.val();
+        if (base64Image) {
+          document.body.style.backgroundImage = `url(${base64Image})`;
+          document.body.style.backgroundSize = "cover";
+          document.body.style.backgroundRepeat = "no-repeat";
+          document.body.style.backgroundAttachment = "fixed";
+        } else {
+          console.error("Nenhuma imagem de fundo definida no banco de dados.");
+        }
+      }, (error) => {
+        console.error("Erro ao carregar imagem de fundo:", error);
+      });
+    }
+
+    // Chamar a função para carregar o fundo ao iniciar
+    loadBackground();
+    
+
+        window.login = () => {
+            const email = document.getElementById("email").value;
+            const password = document.getElementById("password").value;
+            const errorMessage = document.getElementById("error-message");
+
+            signInWithEmailAndPassword(auth, email, password)
+                .then((userCredential) => {
+                    window.location.href = "painel principal.html"; // Redireciona para a página principal após login bem-sucedido
+                })
+                .catch((error) => {
+                    errorMessage.innerText = "Erro: " + error.message;
+                });
+        };
+    </script>
+    <script>
+    const statusElement = document.getElementById('status');
+
+    function updateStatus() {
+      if (navigator.onLine) {
+        statusElement.textContent = 'Online';
+        statusElement.classList.add('online');
+      } else {
+        statusElement.textContent = 'Offline';
+        statusElement.classList.remove('online');
+      }
+    }
+
+    // Atualiza o status ao carregar a página
+    updateStatus();
+
+    // Escuta mudanças no status da conexão
+    window.addEventListener('online', updateStatus);
+    window.addEventListener('offline', updateStatus);
+  </script>
+
+</body>
+</html>

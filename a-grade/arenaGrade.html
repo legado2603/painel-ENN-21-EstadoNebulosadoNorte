@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Painel de Mensagens</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 0;
+      background-color: #f4f4f4;
+    }
+    .container {
+      max-width: 800px;
+      margin: 20px auto;
+      padding: 20px;
+      background-color: #1e1e1e;
+      border-radius: 8px;
+      box-shadow: 0 6px 12px rgba(0, 0, 0, 0.2);
+      color: #ffffff;
+    }
+
+    h1 {
+      text-align: center;
+      margin-bottom: 20px;
+      color: #00bcd4;
+    }
+
+    .loading {
+      text-align: center;
+      color: #aaaaaa;
+      font-size: 18px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 20px;
+      background-color: #2a2a2a;
+      color: #ffffff;
+    }
+
+    th, td {
+      border: 1px solid #333;
+      padding: 12px;
+      text-align: left;
+    }
+
+    th {
+      background-color: #00796b;
+      color: #ffffff;
+    }
+
+    tr:nth-child(even) {
+      background-color: #333;
+    }
+
+    tr:hover {
+      background-color: #444;
+    }
+
+    .btn-delete {
+      background-color: #f44336;
+      color: white;
+      padding: 10px 20px;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      margin: 10px 0;
+      display: block;
+      width: 100%;
+      text-align: center;
+    }
+
+    .btn-delete:hover {
+      background-color: #d32f2f;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Painel de Mensagens</h1>
+    <div id="loading" class="loading">Carregando mensagens...</div>
+    <button class="btn-delete" id="deleteAllBtn">Apagar todas as mensagens</button>
+    <table id="messagesTable" style="display:none;">
+      <thead>
+        <tr>
+          <th>Missão</th>
+          <th>Nome da Missão</th>
+          <th>Nome</th>
+          <th>E-mail</th>
+          <th>WhatsApp</th>
+          <th>Usuário</th>
+          <th>Data</th>
+        </tr>
+      </thead>
+      <tbody>
+      </tbody>
+    </table>
+  </div>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-app.js";
+    import { getDatabase, ref, onValue, remove } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-database.js";
+    import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-auth.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyBp0QRdqod_68ARBfJlDfZQBX4sg1Du_o4",
+      authDomain: "socialnetwork021-fad5a.firebaseapp.com",
+      databaseURL: "https://socialnetwork021-fad5a-default-rtdb.firebaseio.com",
+      projectId: "socialnetwork021-fad5a",
+      storageBucket: "socialnetwork021-fad5a.appspot.com",
+      messagingSenderId: "1040846806964",
+      appId: "1:1040846806964:web:b7b873170deeb8ed785ce1",
+      measurementId: "G-0NC44RCWV6"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const database = getDatabase(app);
+    const auth = getAuth(app);
+
+    const messagesTable = document.getElementById('messagesTable');
+    const loading = document.getElementById('loading');
+    const tbody = messagesTable.querySelector('tbody');
+    const deleteAllBtn = document.getElementById('deleteAllBtn');
+
+    onAuthStateChanged(auth, (user) => {
+      if (user) {
+        carregarMensagens(user.displayName); // Passa o displayName para a função
+      } else {
+        alert('Você precisa fazer login para acessar esta página.');
+        window.location.href = 'login.html';
+      }
+    });
+
+    function carregarMensagens(displayName) {
+      const submissionsRef = ref(database, 'arena/');
+      onValue(submissionsRef, (snapshot) => {
+        const data = snapshot.val();
+        tbody.innerHTML = '';
+        if (data) {
+          Object.keys(data).forEach((key) => {
+            const message = data[key];
+            const missionRef = ref(database, `missoes/${message.missionId}`);
+            onValue(missionRef, (missionSnapshot) => {
+              const missionData = missionSnapshot.val();
+
+              const newRow = tbody.insertRow();
+              newRow.innerHTML = `
+                <td>${message.missionId || 'N/A'}</td>
+                <td>${missionData?.nome || 'N/A'}</td>
+                <td>${message.name || 'N/A'}</td>
+                <td>${message.email || 'N/A'}</td>
+                <td>${message.whatsapp || 'N/A'}</td>
+                <td>${displayName || 'Desconhecido'}</td>
+                <td>${new Date(message.timestamp).toLocaleString() || 'N/A'}</td>
+              `;
+            });
+          });
+          messagesTable.style.display = 'table';
+          loading.style.display = 'none';
+        } else {
+          loading.textContent = 'Nenhuma mensagem encontrada.';
+        }
+      });
+    }
+
+    deleteAllBtn.addEventListener('click', () => {
+      const submissionsRef = ref(database, 'arena/');
+      remove(submissionsRef)
+        .then(() => {
+          alert('Todas as mensagens foram apagadas.');
+          tbody.innerHTML = ''; // Limpa a tabela
+          messagesTable.style.display = 'none'; // Oculta a tabela
+        })
+        .catch((error) => {
+          alert('Erro ao apagar as mensagens: ' + error.message);
+        });
+    });
+  </script>
+</body>
+</html>

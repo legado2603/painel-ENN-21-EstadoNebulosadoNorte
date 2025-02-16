@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Painel de Controle</title>
+</head>
+<body>
+  <h1>Painel de Controle</h1>
+  <div id="auth-status"></div>
+  <form id="content-form">
+    <label for="message">Mensagem para exibir:</label>
+    <textarea id="message" rows="4" cols="50" placeholder="Digite a mensagem"></textarea>
+    <button type="submit">Salvar</button>
+  </form>
+  <div id="saved-message"></div>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-app.js";
+    import { getDatabase, ref, set } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-database.js";
+    import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-auth.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyBp0QRdqod_68ARBfJlDfZQBX4sg1Du_o4",
+      authDomain: "socialnetwork021-fad5a.firebaseapp.com",
+      databaseURL: "https://socialnetwork021-fad5a-default-rtdb.firebaseio.com",
+      projectId: "socialnetwork021-fad5a",
+      storageBucket: "socialnetwork021-fad5a.appspot.com",
+      messagingSenderId: "1040846806964",
+      appId: "1:1040846806964:web:b7b873170deeb8ed785ce1",
+      measurementId: "G-0NC44RCWV6"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const database = getDatabase(app);
+    const auth = getAuth(app);
+
+    // Verificar autenticação
+    const authStatus = document.getElementById("auth-status");
+    onAuthStateChanged(auth, (user) => {
+      if (user) {
+        authStatus.innerText = `Usuário autenticado: ${user.email}`;
+      } else {
+        authStatus.innerText = "Usuário não autenticado. Faça o login.";
+        window.location.href = "login.html"; // Redirecionar para login
+      }
+    });
+
+    // Salvar mensagem no banco de dados
+    const contentForm = document.getElementById("content-form");
+    contentForm.addEventListener("submit", (e) => {
+      e.preventDefault();
+      const message = document.getElementById("message").value;
+
+      // Salvar mensagem no Firebase
+      set(ref(database, "content/message"), {
+        text: message,
+        updatedAt: new Date().toISOString(),
+      }).then(() => {
+        alert("Mensagem salva com sucesso!");
+        document.getElementById("saved-message").innerText = `Mensagem salva: "${message}"`;
+        contentForm.reset();
+      }).catch((error) => {
+        console.error("Erro ao salvar mensagem:", error);
+      });
+    });
+  </script>
+</body>
+</html>

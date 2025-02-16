@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Painel de Produtos</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #121212;
+      color: #fff;
+      margin: 0;
+      padding: 0;
+    }
+
+    .banner {
+      background-color: #00FFFF;
+      color: #121212;
+      padding: 10px 0;
+      text-align: center;
+      font-size: 18px;
+      font-weight: bold;
+      position: fixed;
+      width: 100%;
+      top: 0;
+      left: 0;
+      z-index: 1000;
+    }
+
+    .content {
+      margin-top: 60px;
+      padding: 20px;
+      text-align: center;
+    }
+
+    .input-section {
+      margin-top: 20px;
+      display: none; /* Inicialmente oculto */
+    }
+
+    input[type="text"], input[type="number"], input[type="file"] {
+      width: 50%;
+      padding: 10px;
+      font-size: 16px;
+      border-radius: 5px;
+      border: 2px solid #00FFFF;
+      background-color: #121212;
+      color: #fff;
+      margin: 5px;
+    }
+
+    button {
+      background-color: #00FFFF;
+      color: #121212;
+      padding: 10px 20px;
+      font-size: 16px;
+      border: none;
+      cursor: pointer;
+      border-radius: 5px;
+      margin-top: 10px;
+    }
+
+    button:hover {
+      background-color: #00cccc;
+    }
+
+    .product-list {
+      margin-top: 20px;
+      text-align: left;
+      padding: 10px;
+      background-color: #1e1e1e;
+      border-radius: 5px;
+      max-width: 90%;
+      margin: 0 auto;
+    }
+
+    .product-item {
+      margin-bottom: 20px;
+      background-color: #2c2c2c;
+      padding: 10px;
+      border-radius: 5px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .product-item img {
+      width: 50px;
+      height: 50px;
+      object-fit: cover;
+      margin-right: 10px;
+    }
+
+    .product-item div {
+      flex-grow: 1;
+    }
+
+    .loading {
+      display: none;
+      color: #00FFFF;
+      font-size: 16px;
+      margin-top: 10px;
+    }
+
+    .search-bar {
+      width: 50%;
+      padding: 10px;
+      font-size: 16px;
+      border-radius: 5px;
+      border: 2px solid #00FFFF;
+      background-color: #121212;
+      color: #fff;
+      margin-bottom: 20px;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Painel de Produtos -->
+  <div class="banner" id="versionBanner">
+    Carregando painel de produtos...
+  </div>
+
+  <!-- Conteúdo principal -->
+  <div class="content">
+    <h1>Painel de Produtos</h1>
+    <p>Adicione produtos à sua loja.</p>
+
+    <!-- Barra de pesquisa -->
+    <input type="text" id="searchBar" class="search-bar" placeholder="Buscar produtos..." />
+
+    <!-- Formulário para adicionar produto -->
+    <div class="input-section" id="inputSection">
+      <h2>Adicionar Produto</h2>
+      <input type="text" id="productName" placeholder="Nome do produto" />
+      <input type="file" id="productImage" />
+      <input type="text" id="productDescription" placeholder="Descrição" />
+      <input type="number" id="productPrice" placeholder="Preço" />
+      <input type="number" id="productQuantity" placeholder="Quantidade" />
+      <button id="addProductBtn">Adicionar Produto</button>
+    </div>
+
+    <!-- Status de autenticação -->
+    <p id="authStatus">Você precisa estar logado para adicionar produtos.</p>
+
+    <!-- Status de carregamento -->
+    <p id="loading" class="loading">Carregando...</p>
+
+    <!-- Lista de produtos -->
+    <div class="product-list" id="productList">
+      <h2>Produtos Adicionados</h2>
+      <!-- Produtos serão listados aqui -->
+    </div>
+  </div>
+
+  <!-- Firebase SDK -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.17.1/firebase-app.js";
+    import { getDatabase, ref, set, get, child } from "https://www.gstatic.com/firebasejs/9.17.1/firebase-database.js";
+    import { getAuth, onAuthStateChanged, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/9.17.1/firebase-auth.js";
+    import { getStorage, ref as storageRef, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/9.17.1/firebase-storage.js";
+
+    // Configuração do Firebase
+    const firebaseConfig = {
+      apiKey: "AIzaSyBp0QRdqod_68ARBfJlDfZQBX4sg1Du_o4",
+      authDomain: "socialnetwork021-fad5a.firebaseapp.com",
+      databaseURL: "https://socialnetwork021-fad5a-default-rtdb.firebaseio.com",
+      projectId: "socialnetwork021-fad5a",
+      storageBucket: "socialnetwork021-fad5a.appspot.com",
+      messagingSenderId: "1040846806964",
+      appId: "1:1040846806964:web:b7b873170deeb8ed785ce1",
+      measurementId: "G-0NC44RCWV6"
+    };
+
+    // Inicialização do Firebase
+    const app = initializeApp(firebaseConfig);
+    const database = getDatabase(app);
+    const auth = getAuth(app);
+    const storage = getStorage(app);
+
+    // Elementos do DOM
+    const inputSection = document.getElementById('inputSection');
+    const authStatus = document.getElementById('authStatus');
+    const addProductBtn = document.getElementById('addProductBtn');
+    const productName = document.getElementById('productName');
+    const productImage = document.getElementById('productImage');
+    const productDescription = document.getElementById('productDescription');
+    const productPrice = document.getElementById('productPrice');
+    const productQuantity = document.getElementById('productQuantity');
+    const productList = document.getElementById('productList');
+    const searchBar = document.getElementById('searchBar');
+    const loading = document.getElementById('loading');
+
+    // Função para salvar os dados do produto no Firebase
+    const saveProduct = async (name, imageUrl, description, price, quantity) => {
+      const productsRef = ref(database, 'products/' + Date.now()); // Usando o timestamp como chave única
+      await set(productsRef, {
+        name,
+        imageUrl,
+        description,
+        price,
+        quantity,
+      });
+    };
+
+    // Função para fazer upload da imagem para o Firebase Storage
+    const uploadImage = async (file) => {
+      const imageRef = storageRef(storage, 'product_images/' + file.name);
+      await uploadBytes(imageRef, file);
+      const url = await getDownloadURL(imageRef);
+      return url;
+    };
+
+    // Função para carregar produtos do Firebase
+    const loadProducts = async () => {
+      loading.style.display = 'block';
+      const productsRef = ref(database, 'products');
+      const snapshot = await get(productsRef);
+      loading.style.display = 'none';
+      if (snapshot.exists()) {
+        const products = snapshot.val();
+        productList.innerHTML = '<h2>Produtos Adicionados</h2>'; // Resetar a lista antes de preencher
+        Object.keys(products).forEach((key) => {
+          const product = products[key];
+          const productItem = document.createElement('div');
+          productItem.className = 'product-item';
+          productItem.innerHTML = `
+            <img src="${product.imageUrl}" alt="${product.name}" />
+            <div>
+              <h3>${product.name}</h3>
+              <p>${product.description}</p>
+              <p>Preço: R$${product.price}</p>
+              <p>Quantidade: ${product.quantity}</p>
+            </div>
+          `;
+          productList.appendChild(productItem);
+        });
+      } else {
+        productList.innerHTML += '<p>Nenhum produto encontrado.</p>';
+      }
+    };
+
+    // Função de login do usuário
+    const loginUser = async () => {
+      try {
+        const email = prompt("Digite seu e-mail");
+        const password = prompt("Digite sua senha");
+        await signInWithEmailAndPassword(auth, email, password);
+      } catch (error) {
+        console.error("Erro ao fazer login:", error);
+        alert("Falha no login.");
+      }
+    };
+
+    // Verificar se o usuário está autenticado
+    onAuthStateChanged(auth, (user) => {
+      if (user) {
+        authStatus.textContent = `Bem-vindo, ${user.email}`;
+        inputSection.style.display = 'block'; // Exibe o painel de edição
+        loadProducts(); // Carregar produtos ao autenticar
+      } else {
+        authStatus.textContent = "Usuário não autenticado. Faça login para continuar.";
+        inputSection.style.display = 'none'; // Esconde o painel de edição
+        loginUser(); // Solicita login
+      }
+    });
+
+    // Evento para o botão de adicionar produto
+    addProductBtn.addEventListener('click', async () => {
+      const name = productName.value;
+      const description = productDescription.value;
+      const price = productPrice.value;
+      const quantity = productQuantity.value;
+
+      if (name && description && price && quantity && productImage.files[0]) {
+        try {
+          const imageUrl = await uploadImage(productImage.files[0]);
+          await saveProduct(name, imageUrl, description, price, quantity);
+          alert("Produto adicionado com sucesso!");
+          loadProducts(); // Recarregar produtos após adicionar
+          // Limpar campos após salvar
+          productName.value = '';
+          productDescription.value = '';
+          productPrice.value = '';
+          productQuantity.value = '';
+        } catch (error) {
+          console.error("Erro ao adicionar produto:", error);
+          alert("Erro ao adicionar produto.");
+        }
+      } else {
+        alert("Por favor, preencha todos os campos.");
+      }
+    });
+
+    // Filtrar produtos conforme a pesquisa
+    searchBar.addEventListener('input', () => {
+      const query = searchBar.value.toLowerCase();
+      const productItems = document.querySelectorAll('.product-item');
+      productItems.forEach(item => {
+        const productName = item.querySelector('h3').textContent.toLowerCase();
+        if (productName.includes(query)) {
+          item.style.display = '';
+        } else {
+          item.style.display = 'none';
+        }
+      });
+    });
+  </script>
+
+</body>
+</html>

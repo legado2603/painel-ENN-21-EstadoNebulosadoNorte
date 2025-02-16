@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Marquee Message Editor</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 0;
+    }
+
+    .container {
+      max-width: 600px;
+      margin: 0 auto;
+      padding: 20px;
+      background-color: #f4f4f4;
+      border-radius: 8px;
+    }
+
+    h1, h2 {
+      text-align: center;
+      color: #333;
+    }
+
+    textarea, button {
+      width: 100%;
+      padding: 10px;
+      margin: 5px 0;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+    }
+
+    button {
+      background-color: #007BFF;
+      color: white;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background-color: #0056b3;
+    }
+
+    #marqueeContainer {
+      margin-top: 20px;
+      padding: 10px;
+      border-top: 2px solid #ccc;
+      background-color: #fff;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    <h1>Editar Marquee</h1>
+
+    <!-- Painel de Inserção de Mensagens -->
+    <div id="messageEditor">
+      <h2>Adicionar Nova Mensagem</h2>
+      <textarea id="newMessage" rows="4" placeholder="Digite sua mensagem aqui..."></textarea>
+      <button id="addMessageButton">Adicionar Mensagem</button>
+      <button id="clearMessagesButton">Limpar Mensagens</button>
+    </div>
+
+    <!-- Exibição de mensagens no Marquee -->
+    <div id="marqueeContainer">
+      <marquee id="marqueeText" behavior="scroll" direction="left"></marquee>
+    </div>
+  </div>
+
+  <!-- Firebase Configuration -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-app.js";
+    import { getDatabase, ref, set, push, onValue, remove } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-database.js";
+    import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-auth.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyBp0QRdqod_68ARBfJlDfZQBX4sg1Du_o4",
+      authDomain: "socialnetwork021-fad5a.firebaseapp.com",
+      databaseURL: "https://socialnetwork021-fad5a-default-rtdb.firebaseio.com",
+      projectId: "socialnetwork021-fad5a",
+      storageBucket: "socialnetwork021-fad5a.appspot.com",
+      messagingSenderId: "1040846806964",
+      appId: "1:1040846806964:web:b7b873170deeb8ed785ce1",
+      measurementId: "G-0NC44RCWV6"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const rtdb = getDatabase(app);
+    const auth = getAuth(app);
+
+    onAuthStateChanged(auth, (user) => {
+      if (user) {
+        console.log('Usuário logado:', user);
+
+        document.getElementById('addMessageButton').addEventListener('click', async () => {
+          const message = document.getElementById('newMessage').value;
+
+          try {
+            if (message.trim() !== '') {
+              const messageRef = ref(rtdb, 'marquee/messages');
+              await push(messageRef, message);
+              document.getElementById('newMessage').value = ''; // Limpar o campo após envio
+            }
+          } catch (error) {
+            console.error('Erro ao adicionar mensagem:', error);
+          }
+        });
+
+        document.getElementById('clearMessagesButton').addEventListener('click', async () => {
+          try {
+            await remove(ref(rtdb, 'marquee/messages'));
+          } catch (error) {
+            console.error('Erro ao limpar mensagens:', error);
+          }
+        });
+
+        onValue(ref(rtdb, 'marquee/messages'), (snapshot) => {
+          const marqueeElement = document.getElementById('marqueeText');
+          marqueeElement.innerHTML = ''; // Limpa conteúdo existente
+
+          let messages = [];
+          snapshot.forEach(childSnapshot => {
+            const message = childSnapshot.val();
+            messages.push(message);
+          });
+
+          // Atualiza o marquee com as novas mensagens, substituindo o conteúdo anterior
+          marqueeElement.innerHTML = messages.join(' | ');
+        });
+
+      } else {
+        console.log('Usuário não logado');
+      }
+    });
+  </script>
+
+</body>
+</html>

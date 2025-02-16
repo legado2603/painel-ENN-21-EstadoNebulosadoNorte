@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Alterar Foto de Perfil</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 0;
+      background-color: #1e1e2f;
+      color: #fff;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+    }
+
+    #profile-panel {
+      border: 1px solid #444;
+      padding: 20px;
+      width: 320px;
+      text-align: center;
+      background-color: #2a2a3d;
+      border-radius: 12px;
+      box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.4);
+    }
+
+    #profile-panel h2 {
+      margin-bottom: 20px;
+    }
+
+    #current-photo img {
+      width: 120px;
+      height: 120px;
+      border-radius: 50%;
+      object-fit: cover;
+      border: 2px solid #00ffff;
+    }
+
+    #profile-photo-input {
+      margin: 15px 0;
+    }
+
+    #upload-button {
+      padding: 10px 20px;
+      border: none;
+      background-color: #00ffff;
+      color: #000;
+      font-weight: bold;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: background-color 0.3s;
+    }
+
+    #upload-button:hover {
+      background-color: #00cccc;
+    }
+
+    #login-panel {
+      text-align: center;
+    }
+
+    #login-panel input {
+      padding: 10px;
+      margin: 10px 0;
+      border-radius: 8px;
+      border: none;
+      width: 200px;
+    }
+
+    #login-button {
+      background-color: #00ffff;
+      color: #000;
+      padding: 10px 20px;
+      border: none;
+      font-weight: bold;
+      border-radius: 8px;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+  <div id="login-panel">
+    <h2>Login</h2>
+    <input type="email" id="email" placeholder="Email" />
+    <input type="password" id="password" placeholder="Password" />
+    <button id="login-button">Login</button>
+  </div>
+
+  <div id="profile-panel" style="display: none;">
+    <h2>Alterar Foto de Perfil</h2>
+    <div id="current-photo">
+      <img id="profile-photo" src="default-profile.png" alt="Foto de Perfil">
+    </div>
+    <input type="file" id="profile-photo-input" accept="image/*">
+    <button id="upload-button">Enviar Nova Foto</button>
+  </div>
+
+  <script type="module">
+    // Importações do Firebase
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.17.2/firebase-app.js";
+    import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/9.17.2/firebase-storage.js";
+    import { getAuth, signInWithEmailAndPassword, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.17.2/firebase-auth.js";
+    import { getDatabase, ref as dbRef, set, get } from "https://www.gstatic.com/firebasejs/9.17.2/firebase-database.js";
+
+    // Configuração do Firebase
+    const firebaseConfig = {
+      apiKey: "AIzaSyBp0QRdqod_68ARBfJlDfZQBX4sg1Du_o4",
+      authDomain: "socialnetwork021-fad5a.firebaseapp.com",
+      databaseURL: "https://socialnetwork021-fad5a-default-rtdb.firebaseio.com",
+      projectId: "socialnetwork021-fad5a",
+      storageBucket: "socialnetwork021-fad5a.appspot.com",
+      messagingSenderId: "1040846806964",
+      appId: "1:1040846806964:web:b7b873170deeb8ed785ce1",
+      measurementId: "G-0NC44RCWV6"
+    };
+
+    // Inicializar Firebase
+    const app = initializeApp(firebaseConfig);
+    const storage = getStorage(app);
+    const auth = getAuth(app);
+    const database = getDatabase(app);
+
+    // Elementos HTML
+    const profilePhoto = document.getElementById("profile-photo");
+    const fileInput = document.getElementById("profile-photo-input");
+    const uploadButton = document.getElementById("upload-button");
+    const loginPanel = document.getElementById("login-panel");
+    const profilePanel = document.getElementById("profile-panel");
+    const emailInput = document.getElementById("email");
+    const passwordInput = document.getElementById("password");
+    const loginButton = document.getElementById("login-button");
+
+    // Função para exibir o painel de perfil
+    const showProfilePanel = () => {
+      loginPanel.style.display = "none";
+      profilePanel.style.display = "block";
+    };
+
+    // Função para carregar a foto de perfil do Realtime Database
+    const loadProfilePhoto = async () => {
+      const user = auth.currentUser;
+      if (user) {
+        const userRef = dbRef(database, `users/${user.uid}`);
+        try {
+          const snapshot = await get(userRef);
+          if (snapshot.exists()) {
+            const userData = snapshot.val();
+            const photoURL = userData.profilePhotoUrl;
+            profilePhoto.src = photoURL || "default-profile.png";
+          } else {
+            console.log("Usuário não encontrado.");
+          }
+        } catch (error) {
+          console.error("Erro ao carregar a foto de perfil:", error);
+        }
+      } else {
+        alert("Você precisa estar logado para modificar sua foto de perfil.");
+      }
+    };
+
+    // Função para fazer o upload da foto e salvar no Realtime Database
+const uploadProfilePhotoAndSaveLink = async () => {
+  const user = auth.currentUser;
+  const file = fileInput.files[0];
+
+  if (!user) {
+    alert("Você precisa estar logado para modificar sua foto de perfil.");
+    return;
+  }
+
+  if (!file) {
+    alert("Por favor, selecione uma imagem para enviar.");
+    return;
+  }
+
+  const photoRef = ref(storage, `profilePhotos/${user.uid}/profile.jpg`);
+
+  try {
+    // Upload da foto para o Storage
+    await uploadBytes(photoRef, file);
+
+    // Obtendo URL de download
+    const photoURL = await getDownloadURL(photoRef);
+
+    // Salvar o link da foto no Firebase Realtime Database
+    const userRef = dbRef(database, `users/${user.uid}`);
+    await set(userRef, { profilePhotoUrl: photoURL });
+
+    // Atualizar a foto na interface
+    profilePhoto.src = photoURL;
+
+    // Atualizar todos os posts associados à nova URL de foto
+    const postsRef = dbRef(database, `posts`);
+    const postsSnapshot = await get(postsRef);
+    const posts = postsSnapshot.val();
+
+    if (posts) {
+      Object.keys(posts).forEach(async (postId) => {
+        if (posts[postId].userId === user.uid) {
+          await set(dbRef(database, `posts/${postId}`), { 
+            ...posts[postId],
+            photoURL: photoURL 
+          });
+        }
+      });
+    }
+
+    alert("Foto de perfil atualizada com sucesso!");
+  } catch (error) {
+    console.error("Erro ao enviar a foto de perfil:", error);
+    alert("Erro ao enviar a foto. Tente novamente.");
+  }
+};
+
+    // Login do usuário
+    loginButton.addEventListener("click", async () => {
+      const email = emailInput.value;
+      const password = passwordInput.value;
+
+      try {
+        await signInWithEmailAndPassword(auth, email, password);
+        showProfilePanel();
+        loadProfilePhoto();
+      } catch (error) {
+        alert("Erro ao fazer login. Verifique suas credenciais.");
+      }
+    });
+
+    // Verificar se o usuário está autenticado
+    onAuthStateChanged(auth, (user) => {
+      if (user) {
+        showProfilePanel();
+        loadProfilePhoto();
+      } else {
+        loginPanel.style.display = "block";
+        profilePanel.style.display = "none";
+      }
+    });
+
+    // Evento para enviar a nova foto
+    uploadButton.addEventListener("click", uploadProfilePhotoAndSaveLink);
+  </script>
+</body>
+</html>

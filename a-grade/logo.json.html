@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Upload de Logo</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 0;
+      background-color: #f4f4f4;
+    }
+    .container {
+      max-width: 800px;
+      margin: 20px auto;
+      padding: 20px;
+      background-color: #fff;
+      border-radius: 8px;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    }
+    img {
+      max-width: 100%;
+      border-radius: 8px;
+      margin-bottom: 20px;
+    }
+    input[type="file"] {
+      margin-bottom: 20px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Upload de Logo</h1>
+    <form id="uploadForm">
+      <input type="file" id="logoInput" accept="image/*" required>
+      <button type="submit">Enviar</button>
+    </form>
+    <img id="uploadedLogo" src="" alt="Logo Uploaded">
+  </div>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-app.js";
+    import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-storage.js";
+    import { getDatabase, ref as dbRef, set } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-database.js";
+    import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-auth.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyBp0QRdqod_68ARBfJlDfZQBX4sg1Du_o4",
+      authDomain: "socialnetwork021-fad5a.firebaseapp.com",
+      databaseURL: "https://socialnetwork021-fad5a-default-rtdb.firebaseio.com",
+      projectId: "socialnetwork021-fad5a",
+      storageBucket: "socialnetwork021-fad5a.appspot.com",
+      messagingSenderId: "1040846806964",
+      appId: "1:1040846806964:web:b7b873170deeb8ed785ce1",
+      measurementId: "G-0NC44RCWV6"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const storage = getStorage(app);
+    const database = getDatabase(app);
+    const auth = getAuth(app);
+
+    // Ouvir autenticação
+    onAuthStateChanged(auth, (user) => {
+      if (!user) {
+        alert("Faça login para fazer upload da imagem.");
+        window.location.href = "login.html"; // Redireciona para a página de login
+      }
+    });
+
+    // Função para upload de imagem
+    const uploadLogo = async (file) => {
+      try {
+        // Referência ao Storage
+        const logoRef = ref(storage, `logos/${file.name}`);
+        
+        // Upload da imagem
+        await uploadBytes(logoRef, file);
+
+        // Recuperar URL da imagem
+        const logoUrl = await getDownloadURL(logoRef);
+
+        // Atualizar o Realtime Database com o URL
+        const logoDbRef = dbRef(database, 'config/logo');
+        await set(logoDbRef, { url: logoUrl });
+
+        // Atualizar a imagem exibida no painel
+        document.getElementById('uploadedLogo').src = logoUrl;
+      } catch (error) {
+        console.error("Erro ao fazer upload da imagem:", error);
+      }
+    };
+
+    // Evento de submit do formulário
+    document.getElementById('uploadForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const file = document.getElementById('logoInput').files[0];
+      if (file) {
+        await uploadLogo(file);
+      }
+    });
+  </script>
+</body>
+</html>

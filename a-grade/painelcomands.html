@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Painel de Comandos</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #0d1117;
+      color: #00ffff;
+      margin: 0;
+      padding: 0;
+    }
+    h1 {
+      text-align: center;
+      margin: 20px;
+    }
+    form, #loginForm, #logoutButton {
+      max-width: 600px;
+      margin: 20px auto;
+      padding: 20px;
+      background-color: #161b22;
+      border: 1px solid #00ffff;
+      border-radius: 5px;
+    }
+    label {
+      display: block;
+      margin-bottom: 5px;
+      font-weight: bold;
+    }
+    input, textarea, button {
+      width: 100%;
+      margin-bottom: 15px;
+      padding: 10px;
+      background-color: #0d1117;
+      color: #00ffff;
+      border: 1px solid #00ffff;
+      border-radius: 5px;
+    }
+    button {
+      cursor: pointer;
+    }
+    #output {
+      max-width: 800px;
+      margin: 20px auto;
+      padding: 20px;
+      background-color: #161b22;
+      border: 1px solid #00ffff;
+      border-radius: 5px;
+      max-height: 300px;
+      overflow-y: auto;
+    }
+    .entry {
+      margin-bottom: 10px;
+      padding: 10px;
+      border-bottom: 1px solid #00ffff;
+    }
+    #logoutButton {
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+  <h1>Painel de Comandos</h1>
+  
+  <!-- Formulário de Login -->
+  <form id="loginForm">
+    <h2>Login</h2>
+    <label for="email">E-mail</label>
+    <input type="email" id="email" placeholder="Seu e-mail" required>
+    
+    <label for="password">Senha</label>
+    <input type="password" id="password" placeholder="Sua senha" required>
+    
+    <button type="submit">Entrar</button>
+  </form>
+  
+  <!-- Formulário de Comandos (Oculto até o Login) -->
+  <form id="commandForm" style="display: none;">
+    <label for="commandKey">Chave do Comando</label>
+    <input type="text" id="commandKey" placeholder="Exemplo: ajuda" required>
+    
+    <label for="commandValue">Valor do Comando</label>
+    <textarea id="commandValue" placeholder="Exemplo: A Grade é um projeto inovador..." rows="5" required></textarea>
+    
+    <button type="submit">Adicionar Comando</button>
+  </form>
+  
+  <!-- Botão de Logout -->
+  <div id="logoutButton" style="display: none;">
+    <button onclick="logout()">Sair</button>
+  </div>
+  
+  <div id="output" style="display: none;">
+    <h2>Comandos Salvos:</h2>
+    <div id="commandList"></div>
+  </div>
+
+  <script type="module">
+    // Importa o Firebase
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.17.2/firebase-app.js";
+    import { getDatabase, ref, set, onValue } from "https://www.gstatic.com/firebasejs/9.17.2/firebase-database.js";
+    import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.17.2/firebase-auth.js";
+
+    // Configuração do Firebase
+    const firebaseConfig = {
+      apiKey: "AIzaSyBp0QRdqod_68ARBfJlDfZQBX4sg1Du_o4",
+      authDomain: "socialnetwork021-fad5a.firebaseapp.com",
+      databaseURL: "https://socialnetwork021-fad5a-default-rtdb.firebaseio.com",
+      projectId: "socialnetwork021-fad5a",
+      storageBucket: "socialnetwork021-fad5a.appspot.com",
+      messagingSenderId: "1040846806964",
+      appId: "1:1040846806964:web:b7b873170deeb8ed785ce1",
+      measurementId: "G-0NC44RCWV6"
+    };
+
+    // Inicializa o Firebase
+    const app = initializeApp(firebaseConfig);
+    const database = getDatabase(app);
+    const auth = getAuth(app);
+
+    // Referências do DOM
+    const loginForm = document.getElementById("loginForm");
+    const commandForm = document.getElementById("commandForm");
+    const logoutButton = document.getElementById("logoutButton");
+    const commandKeyInput = document.getElementById("commandKey");
+    const commandValueInput = document.getElementById("commandValue");
+    const commandList = document.getElementById("commandList");
+    const output = document.getElementById("output");
+
+    // Login
+    loginForm.addEventListener("submit", (e) => {
+      e.preventDefault();
+      const email = document.getElementById("email").value;
+      const password = document.getElementById("password").value;
+
+      signInWithEmailAndPassword(auth, email, password)
+        .then(() => {
+          alert("Login realizado com sucesso!");
+        })
+        .catch((error) => {
+          alert("Erro no login: " + error.message);
+        });
+    });
+
+    // Logout
+    function logout() {
+      signOut(auth)
+        .then(() => {
+          alert("Logout realizado com sucesso!");
+        })
+        .catch((error) => {
+          alert("Erro ao sair: " + error.message);
+        });
+    }
+
+    // Monitorar estado de autenticação
+    onAuthStateChanged(auth, (user) => {
+      if (user) {
+        loginForm.style.display = "none";
+        commandForm.style.display = "block";
+        logoutButton.style.display = "block";
+        output.style.display = "block";
+        loadCommands();
+      } else {
+        loginForm.style.display = "block";
+        commandForm.style.display = "none";
+        logoutButton.style.display = "none";
+        output.style.display = "none";
+      }
+    });
+
+    // Adicionar comando ao Firebase
+    commandForm.addEventListener("submit", (e) => {
+      e.preventDefault();
+
+      const commandKey = commandKeyInput.value.trim();
+      const commandValue = commandValueInput.value.trim();
+
+      if (commandKey && commandValue) {
+        set(ref(database, `comandos/${commandKey}`), commandValue)
+          .then(() => {
+            alert("Comando adicionado com sucesso!");
+            commandKeyInput.value = "";
+            commandValueInput.value = "";
+          })
+          .catch((error) => {
+            alert("Erro ao adicionar comando: " + error.message);
+          });
+      }
+    });
+
+    // Carregar comandos do Firebase
+    function loadCommands() {
+      const commandsRef = ref(database, "comandos");
+      onValue(commandsRef, (snapshot) => {
+        commandList.innerHTML = ""; // Limpa a lista para evitar duplicações
+        const commands = snapshot.val();
+        if (commands) {
+          Object.keys(commands).forEach((key) => {
+            const entry = document.createElement("div");
+            entry.className = "entry";
+            entry.innerHTML = `<strong>${key}:</strong> ${commands[key]}`;
+            commandList.appendChild(entry);
+          });
+        }
+      });
+    }
+  </script>
+</body>
+</html>
